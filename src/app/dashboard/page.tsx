@@ -1,36 +1,43 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAssets } from '@/hooks/use-assets';
+import { analyzePortfolio } from '@/lib/analysis';
 
 export default function DashboardPage() {
   const { assets, loading } = useAssets();
   const [status, setStatus] = useState('Stable');
   const [auraColor, setAuraColor] = useState('bg-neon-teal');
-  const [vaMessage, setVaMessage] = useState("데이터 무결성 검증 완료. 현재 현금 흐름은 지침 범위 내에 있습니다.");
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
 
-  const balance = useMemo(() => {
-    return assets.reduce((acc, curr) => acc + (Number(curr.current_price) * Number(curr.quantity)), 0);
+  // Run Intelligence Engine
+  const analysis = useMemo(() => {
+    return analyzePortfolio(assets);
   }, [assets]);
+  
+  const balance = analysis.totalValue;
 
-  // Asset Anomaly Monitor (VA Cold Unit)
   useEffect(() => {
-    if (loading || assets.length === 0) return;
-    
-    // Simple logic: if any asset dropped significantly or total drift
-    // For now, we simulate drift for visual effect, but base it on real length
-    const timer = setInterval(() => {
-      if (status === 'Stable' && Math.random() > 0.95) {
-         setStatus('Anomaly');
-         setAuraColor('bg-neon-gold');
-         setVaMessage("비정상적 지출 감지. 예산 한도 초과 위험이 92%입니다. 즉시 감사를 권고합니다.");
-      } else if (status === 'Anomaly' && Math.random() > 0.8) {
-         setStatus('Stable');
-         setAuraColor('bg-neon-teal');
-         setVaMessage("시장 변동성에 따른 미세 조정 중. 특이 사항 없음.");
+    if (!loading && assets.length > 0) {
+      if (analysis.safetyScore < 60) {
+        setStatus('Anomaly');
+        setAuraColor('bg-neon-gold');
+      } else {
+        setStatus('Stable');
+        setAuraColor('bg-neon-teal');
       }
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [loading, assets, status]);
+    }
+  }, [analysis, loading, assets]);
+
+  const handleStartAudit = () => {
+    setIsAuditing(true);
+    setTimeout(() => {
+      setIsAuditing(false);
+      setShowOverlay(true);
+    }, 1500); // Simulate cold calculation
+  };
+
+  // Removed random simulation for real data-driven updates
   return (
     <main className="min-h-[100dvh] bg-[#050505] text-white selection:bg-neon-teal selection:text-black">
       {/* Cockpit HUD Layout */}
@@ -85,15 +92,30 @@ export default function DashboardPage() {
                 ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </motion.h2>
             </div>
+
+            {/* Allocation Bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-2 flex">
+              {analysis.allocations.map((alloc, i) => (
+                <div 
+                  key={alloc.ticker} 
+                  className={`h-full opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
+                  style={{ 
+                    width: `${alloc.weight * 100}%`,
+                    backgroundColor: i === 0 ? 'var(--neon-teal)' : i === 1 ? 'var(--foreground)' : 'var(--glass-border)'
+                  }}
+                  title={`${alloc.ticker}: ${(alloc.weight * 100).toFixed(1)}%`}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Data Grid: High Density Cockpit */}
           <div className="grid grid-cols-2 md:grid-cols-4 border-t border-white/10 divide-x divide-white/10">
              {[
-               { label: 'YTD_GROWTH', value: '+24.5%', color: 'text-neon-teal' },
-               { label: 'LIQUIDITY', value: '42.1K', color: 'text-white' },
-               { label: 'RISK_INDEX', value: 'LOW', color: 'text-neon-gold' },
-               { label: 'VA_ALPHA', value: '1.2X', color: 'text-white' }
+               { label: 'HHI_INDEX', value: analysis.hhiIndex.toFixed(3), color: analysis.hhiIndex > 0.25 ? 'text-neon-gold' : 'text-neon-teal' },
+               { label: 'SAFETY_SCORE', value: `${analysis.safetyScore}/100`, color: 'text-white' },
+               { label: 'DOMINANT_ASSET', value: analysis.dominantAsset, color: 'text-neon-gold' },
+               { label: 'TOTAL_ASSETS', value: assets.length, color: 'text-white' }
              ].map((stat, i) => (
                 <div key={i} className="p-8 space-y-2 hover:bg-white/5 transition-colors cursor-crosshair">
                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{stat.label}</p>
@@ -122,13 +144,17 @@ export default function DashboardPage() {
            <div className="space-y-4">
               <div className={`p-6 glass-card border-l-4 ${status === 'Anomaly' ? 'border-neon-gold' : 'border-neon-teal'}`}>
                  <p className="text-sm text-gray-400 mb-2 leading-relaxed font-mono">
-                   [{status}] {vaMessage}
+                   [{isAuditing ? 'CALCULATING...' : status}] {loading ? "데이터 로딩 중..." : analysis.recommendation}
                  </p>
               </div>
               
               <div className="flex flex-col gap-2">
-                 <button className="w-full h-16 bg-white text-black font-black text-xs tracking-widest uppercase hover:bg-neon-teal hover:scale-[1.02] transition-all">
-                    START_AUDIT
+                 <button 
+                   onClick={handleStartAudit}
+                   disabled={isAuditing}
+                   className="w-full h-16 bg-white text-black font-black text-xs tracking-widest uppercase hover:bg-neon-teal hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-wait"
+                 >
+                    {isAuditing ? 'EXECUTING_AUDIT...' : 'START_AUDIT'}
                  </button>
                  <button className="w-full h-16 glass-card text-white font-black text-xs tracking-widest uppercase hover:bg-white/10 transition-all">
                     DATA_SOURCE
@@ -146,6 +172,39 @@ export default function DashboardPage() {
               </div>
            </div>
         </aside>
+
+        {/* Intelligence Overlay */}
+        <AnimatePresence>
+          {showOverlay && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
+            >
+              <div className="max-w-2xl w-full glass-card p-12 border-neon-teal/50 neon-border relative">
+                <button onClick={() => setShowOverlay(false)} className="absolute top-6 right-6 text-2xl hover:text-neon-teal">&times;</button>
+                <h3 className="text-4xl font-bold tracking-tighter mb-2">VA_AUDIT_REPORT</h3>
+                <p className="text-neon-teal font-mono text-xs tracking-widest mb-8">SYSTEM TIME: {new Date().toISOString()}</p>
+
+                <div className="space-y-6 font-mono text-sm">
+                   <div className="flex justify-between border-b border-white/10 pb-4">
+                     <span className="text-gray-500">CONCENTRATION RISK (HHI)</span>
+                     <span className={analysis.hhiIndex > 0.25 ? 'text-neon-gold' : 'text-neutral-100'}>{analysis.hhiIndex.toFixed(4)}</span>
+                   </div>
+                   <div className="flex justify-between border-b border-white/10 pb-4">
+                     <span className="text-gray-500">SAFETY SCORE</span>
+                     <span>{analysis.safetyScore} / 100</span>
+                   </div>
+                   <div className="pt-4">
+                     <span className="block text-gray-500 mb-4">RECOMMENDATION DIRECTIVE</span>
+                     <p className="text-lg leading-relaxed">{analysis.recommendation}</p>
+                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </main>
