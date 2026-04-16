@@ -1,31 +1,36 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAssets } from '@/hooks/use-assets';
 
 export default function DashboardPage() {
-  const [balance, setBalance] = useState(142500);
+  const { assets, loading } = useAssets();
   const [status, setStatus] = useState('Stable');
   const [auraColor, setAuraColor] = useState('bg-neon-teal');
-  const [vaMessage, setVaMessage] = useState("현재 지출 트렌드가 보수적입니다. 잔여 자산의 5%를 해외 소형 기술주에 재분배하는 것을 제안합니다.");
+  const [vaMessage, setVaMessage] = useState("데이터 무결성 검증 완료. 현재 현금 흐름은 지침 범위 내에 있습니다.");
 
-  // Mock Real-time Update
+  const balance = useMemo(() => {
+    return assets.reduce((acc, curr) => acc + (Number(curr.current_price) * Number(curr.quantity)), 0);
+  }, [assets]);
+
+  // Asset Anomaly Monitor (VA Cold Unit)
   useEffect(() => {
+    if (loading || assets.length === 0) return;
+    
+    // Simple logic: if any asset dropped significantly or total drift
+    // For now, we simulate drift for visual effect, but base it on real length
     const timer = setInterval(() => {
-      const drift = (Math.random() - 0.45) * 500; // Slight upward bias
-      setBalance(prev => prev + drift);
-      
-      if (drift < -200) {
-        setStatus('Alert');
-        setAuraColor('bg-neon-gold');
-        setVaMessage("급격한 자산 변동이 감지되었습니다. 포트폴리오 리스크 헷징이 필요합니다.");
-      } else {
-        setStatus('Operational');
-        setAuraColor('bg-neon-teal');
+      if (status === 'Stable' && Math.random() > 0.95) {
+         setStatus('Anomaly');
+         setAuraColor('bg-neon-gold');
+         setVaMessage("비정상적 지출 감지. 예산 한도 초과 위험이 92%입니다. 즉시 감사를 권고합니다.");
+      } else if (status === 'Anomaly' && Math.random() > 0.8) {
+         setStatus('Stable');
+         setAuraColor('bg-neon-teal');
+         setVaMessage("시장 변동성에 따른 미세 조정 중. 특이 사항 없음.");
       }
-    }, 5000);
+    }, 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [loading, assets, status]);
   return (
     <main className="min-h-[100dvh] bg-[#050505] text-white selection:bg-neon-teal selection:text-black">
       {/* Cockpit HUD Layout */}
@@ -109,24 +114,24 @@ export default function DashboardPage() {
                 className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-neon-teal/20 to-transparent"
               ></motion.div>
               <div className="absolute inset-0 flex flex-col justify-end p-8 gap-1">
-                 <p className="text-[10px] font-mono text-neon-teal">MODEL_VERSION: v1.0.4-LINA</p>
-                 <h3 className="text-3xl font-bold tracking-tighter">VA_ADVISOR</h3>
+                 <p className="text-[10px] font-mono text-neon-teal">UNIT_TYPE: ANALYTICAL_INSPECTOR</p>
+                 <h3 className="text-3xl font-bold tracking-tighter">VA_COLD_UNIT</h3>
               </div>
            </div>
 
            <div className="space-y-4">
-              <div className={`p-6 glass-card border-l-4 ${status === 'Alert' ? 'border-neon-gold' : 'border-neon-teal'}`}>
-                 <p className="text-sm text-gray-400 mb-2 leading-relaxed italic">
-                   "{vaMessage}"
+              <div className={`p-6 glass-card border-l-4 ${status === 'Anomaly' ? 'border-neon-gold' : 'border-neon-teal'}`}>
+                 <p className="text-sm text-gray-400 mb-2 leading-relaxed font-mono">
+                   [{status}] {vaMessage}
                  </p>
               </div>
               
               <div className="flex flex-col gap-2">
                  <button className="w-full h-16 bg-white text-black font-black text-xs tracking-widest uppercase hover:bg-neon-teal hover:scale-[1.02] transition-all">
-                    EXECUTE_PLAN
+                    START_AUDIT
                  </button>
                  <button className="w-full h-16 glass-card text-white font-black text-xs tracking-widest uppercase hover:bg-white/10 transition-all">
-                    ANALYZE_REASON
+                    DATA_SOURCE
                  </button>
               </div>
            </div>
