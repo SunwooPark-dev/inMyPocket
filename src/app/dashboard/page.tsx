@@ -1,9 +1,31 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DashboardPage() {
+  const [balance, setBalance] = useState(142500);
+  const [status, setStatus] = useState('Stable');
+  const [auraColor, setAuraColor] = useState('bg-neon-teal');
+  const [vaMessage, setVaMessage] = useState("현재 지출 트렌드가 보수적입니다. 잔여 자산의 5%를 해외 소형 기술주에 재분배하는 것을 제안합니다.");
+
+  // Mock Real-time Update
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const drift = (Math.random() - 0.45) * 500; // Slight upward bias
+      setBalance(prev => prev + drift);
+      
+      if (drift < -200) {
+        setStatus('Alert');
+        setAuraColor('bg-neon-gold');
+        setVaMessage("급격한 자산 변동이 감지되었습니다. 포트폴리오 리스크 헷징이 필요합니다.");
+      } else {
+        setStatus('Operational');
+        setAuraColor('bg-neon-teal');
+      }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
   return (
     <main className="min-h-[100dvh] bg-[#050505] text-white selection:bg-neon-teal selection:text-black">
       {/* Cockpit HUD Layout */}
@@ -21,7 +43,7 @@ export default function DashboardPage() {
                 IN<span className="text-neon-teal">MY</span>POCKET
               </h1>
               <p className="text-gray-500 font-medium tracking-widest uppercase text-sm">
-                System Status: <span className="text-neon-teal animate-pulse">Operational</span> // Oracle Sync Enabled
+                System Status: <span className={`${status === 'Alert' ? 'text-neon-gold' : 'text-neon-teal'} animate-pulse`}>{status}</span> // Oracle Sync Enabled
               </p>
             </motion.div>
             
@@ -43,13 +65,20 @@ export default function DashboardPage() {
               <motion.div 
                 animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="w-64 h-64 bg-neon-teal/20 blur-[100px] rounded-full"
+                className={`w-64 h-64 ${auraColor} blur-[100px] rounded-full`}
               ></motion.div>
             </div>
             
-            <div className="absolute bottom-12 left-12">
+            <div className="absolute inset-x-0 bottom-12 left-12">
               <p className="text-gray-500 text-sm font-mono mb-2">/ TOTAL_EQUITY</p>
-              <h2 className="text-6xl md:text-8xl font-bold tracking-tighter">$142,500.<span className="text-neon-teal/50">00</span></h2>
+              <motion.h2 
+                key={balance}
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: 1 }}
+                className="text-6xl md:text-8xl font-bold tracking-tighter"
+              >
+                ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </motion.h2>
             </div>
           </div>
 
@@ -86,9 +115,9 @@ export default function DashboardPage() {
            </div>
 
            <div className="space-y-4">
-              <div className="p-6 glass-card border-l-4 border-neon-gold">
+              <div className={`p-6 glass-card border-l-4 ${status === 'Alert' ? 'border-neon-gold' : 'border-neon-teal'}`}>
                  <p className="text-sm text-gray-400 mb-2 leading-relaxed italic">
-                   "현재 지출 트렌드가 보수적입니다. 잔여 자산의 5%를 해외 소형 기술주에 재분배하는 것을 제안합니다. 시뮬레이션 결과 기대 수익률은 +12%입니다."
+                   "{vaMessage}"
                  </p>
               </div>
               
