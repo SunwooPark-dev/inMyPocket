@@ -1,0 +1,41 @@
+{
+  "name": "inmypoket",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "dev:3001": "node scripts/run-powershell-script.mjs ./scripts/run-next-with-port.ps1 -Mode dev -Port 3001",
+    "build": "next build",
+    "start": "next start",
+    "start:3001": "node scripts/run-powershell-script.mjs ./scripts/run-next-with-port.ps1 -Mode start -Port 3001",
+    "port:check": "node scripts/run-powershell-script.mjs ./scripts/check-port.ps1 -Port 3000",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types tests/normalization.test.ts tests/waitlist-lane-a.test.ts tests/waitlist-harness-lane-a.test.ts tests/publication-governance-lane-a.test.ts tests/governance-seed-30328-contract.test.ts",
+    "import:legacy": "node --experimental-strip-types scripts/import-legacy-json.ts",
+    "smoke:local": "node scripts/run-powershell-script.mjs ./scripts/live-smoke.ps1",
+    "ops:evidence": "node scripts/run-powershell-script.mjs ./scripts/collect-ops-evidence.ps1",
+    "ops:ui-evidence": "node scripts/run-powershell-script.mjs ./scripts/capture-ui-evidence.ps1",
+    "ops:verify": "node --experimental-strip-types scripts/verify-ops-evidence.ts",
+    "ops:attest-hosted": "node --experimental-strip-types scripts/write-hosted-attestation.ts",
+    "ops:handoff": "node --experimental-strip-types scripts/show-external-proof-handoff.ts",
+    "visual:update-baseline": "node scripts/run-powershell-script.mjs ./scripts/update-visual-baseline.ps1",
+    "visual:check": "node scripts/run-python-script.mjs ./scripts/verify-visual-baseline.py"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "stripe": "^18.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "latest",
+    "typescript": "latest"
+  }
+}

@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  ops-evidence-gate:
+    runs-on: windows-latest
+    needs: quality-gate
+    env:
+      APP_URL: http://localhost:3000
+      ADMIN_ACCESS_TOKEN: ci-admin-token
+      ADMIN_SESSION_SECRET: ci-admin-session-secret
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm build
+
+      - name: Start app
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c","pnpm start" -WorkingDirectory "$pwd" -PassThru -WindowStyle Hidden
+          "APP_PID=$($proc.Id)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $deadline = (Get-Date).AddSeconds(120)
+          while ((Get-Date) -lt $deadline) {
+            try {
+              $response = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:3000/" -TimeoutSec 5
+              if ($response.StatusCode -eq 200) {
+                Write-Host "App is ready."
+                exit 0
+              }
+            } catch {
+            }
+            Start-Sleep -Seconds 2
+          }
+          throw "App did not become ready in time."
+
+      - name: Run hosted non-payment ops evidence
+        run: pnpm ops:evidence
+
+      - name: Run advisory visual regression
+        continue-on-error: true
+        run: pnpm visual:check
+
+      - name: Write hosted provenance attestation
+        run: pnpm ops:attest-hosted
+
+      - name: Verify hosted ops evidence contract
+        run: pnpm ops:verify
+
+      - name: Upload ops evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ops-evidence-bundle
+          path: |
+            .ops-evidence/LATEST.md
+            .ops-evidence/latest-run.json
+            .ops-evidence/release-health.json
+            .ops-evidence/release-health.md
+            .ops-evidence/hosted-attestation.json
+            .ops-evidence/visual-regression.latest.json
+            .ops-evidence/visual-regression-*/
+            .ops-evidence/ops-evidence-*/
+
+      - name: Stop app
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:APP_PID) {
+            cmd /c "taskkill /PID $env:APP_PID /T /F >nul 2>&1" | Out-Null
+          }

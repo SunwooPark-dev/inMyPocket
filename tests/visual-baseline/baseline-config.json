@@ -1,0 +1,8 @@
+﻿{
+  "maxDifferenceRatio": 0.015,
+  "images": [
+    "home-desktop.png",
+    "home-mobile.png",
+    "printable-mobile.png"
+  ]
+}
