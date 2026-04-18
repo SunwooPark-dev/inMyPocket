@@ -208,7 +208,6 @@ function Get-UiEvidenceStatus {
 
   if (
     $UiEvidenceResult.Output -match "No supported browser found" -or
-    $UiEvidenceResult.Output -match "액세스가 거부되었습니다" -or
     $UiEvidenceResult.Output -match "Access is denied" -or
     $UiEvidenceResult.Output -match "was not created at"
   ) {
