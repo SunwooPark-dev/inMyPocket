@@ -1,6 +1,56 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
+import { appEnv, isSupabaseConfigured } from "./env.ts";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+let serviceClient:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | ReturnType<typeof createClient<any>>
+  | null
+  | undefined;
+let publicClient:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | ReturnType<typeof createClient<any>>
+  | null
+  | undefined;
+
+export function getSupabaseServiceClient() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  if (!serviceClient) {
+    serviceClient = createClient(
+      appEnv.supabaseUrl!,
+      appEnv.supabaseServiceRoleKey!,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    );
+  }
+
+  return serviceClient;
+}
+
+export function getSupabasePublicClient() {
+  if (!appEnv.supabaseUrl || !appEnv.supabasePublishableKey) {
+    return null;
+  }
+
+  if (!publicClient) {
+    publicClient = createClient(
+      appEnv.supabaseUrl,
+      appEnv.supabasePublishableKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      }
+    );
+  }
+
+  return publicClient;
+}
