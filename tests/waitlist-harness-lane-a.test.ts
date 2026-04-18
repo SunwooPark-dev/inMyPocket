@@ -17,8 +17,8 @@ test("caregiver copy promises trust-first weekly updates", () => {
 });
 
 test("submit label stays aligned with weekly updates path", () => {
-  assert.equal(getWaitlistSubmitLabel("saving", false), "Starting weekly updates...");
-  assert.equal(getWaitlistSubmitLabel("idle", false), "Get weekly updates");
+  assert.equal(getWaitlistSubmitLabel("saving"), "Starting weekly updates...");
+  assert.equal(getWaitlistSubmitLabel("idle"), "Get weekly updates");
 });
 
 test("known waitlist errors normalize to plain guidance", () => {

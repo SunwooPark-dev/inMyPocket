@@ -172,7 +172,7 @@ test("waitlist form content adapts to audience and normalizes messages", () => {
   assert.match(getWaitlistIntroCopy(false, "caregiver"), /parent|family member/i);
   assert.equal(getWaitlistTrustPoints("self").length, 3);
   assert.equal(getWaitlistTrustPoints("caregiver").length, 3);
-  assert.equal(getWaitlistSubmitLabel("saving", false), "Starting weekly updates...");
+  assert.equal(getWaitlistSubmitLabel("saving"), "Starting weekly updates...");
   assert.equal(normalizeWaitlistMessage("A valid email is required."), "Please enter a valid email address.");
 });
 
@@ -294,8 +294,8 @@ test("external proof handoff still exposes hosted required inputs and expected o
 
   assert.equal(handoff.some((item) => item.key === "hosted-proof"), true);
   assert.equal(handoff.some((item) => item.key === "payment-proof"), false);
-  assert.equal(handoff[0]?.requiredInputs.length! > 0, true);
-  assert.equal(handoff[0]?.expectedOutputs.length! > 0, true);
+  assert.equal((handoff[0]?.requiredInputs.length ?? 0) > 0, true);
+  assert.equal((handoff[0]?.expectedOutputs.length ?? 0) > 0, true);
 });
 
 test("validateEvidenceFileDescriptor enforces type and size rules", () => {

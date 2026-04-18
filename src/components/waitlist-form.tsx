@@ -211,7 +211,7 @@ export function WaitlistForm({ defaultZip, checkoutEnabled }: WaitlistFormProps)
       </label>
 
       <button type="submit" className="button" disabled={status === "saving"}>
-        {getWaitlistSubmitLabel(status, checkoutEnabled)}
+        {getWaitlistSubmitLabel(status)}
       </button>
 
       {message ? (

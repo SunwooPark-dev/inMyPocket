@@ -5,7 +5,7 @@ import { readRecentAdminUnlockIncidents } from "../../lib/admin-unlock-audit";
 import { AdminPreviewForm } from "../../components/admin-preview-form";
 import { AdminUnlockForm } from "../../components/admin-unlock-form";
 import { DAILY_RUNBOOK, PUBLISH_GATES, SOURCE_GOVERNANCE } from "../../lib/catalog";
-import { appEnv, isPaymentFlowEnabled, isSupabaseConfigured, isStripeConfigured, monetizationModel } from "../../lib/env";
+import { appEnv, isPaymentFlowEnabled, isSupabaseConfigured, monetizationModel } from "../../lib/env";
 import {
   readLatestHostedOpsAttestationSummary,
   readLatestOpsEvidenceSummary,

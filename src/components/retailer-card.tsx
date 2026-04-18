@@ -14,7 +14,7 @@ function recommendationLabel(rank: number) {
   return "Higher today";
 }
 
-function membershipLine(summary: BasketSummary) {
+function membershipLine() {
   return "Member pricing shown separately";
 }
 
@@ -27,7 +27,7 @@ export function RetailerCard({
 }: RetailerCardProps) {
   const savingsGap = Math.max(0, summary.total - cheapestTotal);
   const recommendation = recommendationLabel(rank);
-  const membership = membershipLine(summary);
+  const membership = membershipLine();
   const showMembershipLine = summary.retailer.membershipLabel !== "No membership";
   const isBest = rank === 0;
 

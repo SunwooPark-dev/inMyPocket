@@ -3,10 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { appEnv, isSupabaseConfigured } from "./env.ts";
 
 let serviceClient:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | ReturnType<typeof createClient<any>>
   | null
   | undefined;
 let publicClient:
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | ReturnType<typeof createClient<any>>
   | null
   | undefined;

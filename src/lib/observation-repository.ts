@@ -20,7 +20,7 @@ function requireSupabase() {
     throw new Error("Supabase is not configured.");
   }
 
-  return client as any;
+  return client;
 }
 
 function toOptionalIsoString(value: unknown) {

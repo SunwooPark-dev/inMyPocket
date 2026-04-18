@@ -17,8 +17,8 @@ async function main() {
   const observationsPath = path.join(process.cwd(), "data", "observations.json");
   const waitlistPath = path.join(process.cwd(), "data", "waitlist.json");
 
-  const observations = await readJsonFile<any[]>(observationsPath);
-  const waitlistEntries = await readJsonFile<any[]>(waitlistPath);
+  const observations = await readJsonFile<Array<Record<string, unknown>>>(observationsPath);
+  const waitlistEntries = await readJsonFile<Array<Record<string, unknown>>>(waitlistPath);
 
   if (dryRun) {
     console.log(`dry-run observations=${observations.length} waitlist=${waitlistEntries.length}`);

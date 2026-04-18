@@ -144,7 +144,6 @@ export function LocationAwareStoreExperience({
   }, [browserCoordinates, currentZip, effectiveLocationSource, originCoordinates, summaries]);
 
   const cheapest = summaries[0] ?? null;
-  const nextBest = summaries[1] ?? null;
   const nearestStore = nearestContext?.nearestOverallStore ?? null;
   const nearestStoreName = nearestStore?.label ?? "";
   const nearestSummary = summaries.find((summary) => summary.store.id === nearestStore?.id) ?? null;

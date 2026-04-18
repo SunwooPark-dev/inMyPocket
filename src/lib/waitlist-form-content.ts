@@ -23,8 +23,7 @@ export function getWaitlistTrustPoints(audience: WaitlistAudience) {
 }
 
 export function getWaitlistSubmitLabel(
-  status: "idle" | "saving" | "done" | "error",
-  checkoutEnabled: boolean
+  status: "idle" | "saving" | "done" | "error"
 ) {
   if (status === "saving") {
     return "Starting weekly updates...";
