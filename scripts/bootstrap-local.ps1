@@ -12,8 +12,13 @@ Write-Host "[inMyPoket] Local bootstrap" -ForegroundColor Cyan
 Write-Host "Project root: $projectRoot" -ForegroundColor DarkGray
 
 if (-not (Test-Path $envLocalPath)) {
-  Copy-Item -LiteralPath $envExamplePath -Destination $envLocalPath
-  Write-Host "Created .env.local from .env.example" -ForegroundColor Green
+  if (Test-Path $envExamplePath) {
+    Copy-Item -LiteralPath $envExamplePath -Destination $envLocalPath
+    Write-Host "Created .env.local from .env.example" -ForegroundColor Green
+  } else {
+    New-Item -ItemType File -Path $envLocalPath -Force | Out-Null
+    Write-Host "Created empty .env.local because .env.example is not present in this environment" -ForegroundColor Yellow
+  }
 } else {
   Write-Host ".env.local already exists" -ForegroundColor Green
 }

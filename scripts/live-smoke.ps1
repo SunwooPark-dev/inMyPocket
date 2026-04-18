@@ -136,8 +136,12 @@ try {
 }
 
 $validWaitlistBody = @{ email = "smoke-waitlist-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())@example.com"; zipCode = "30062" } | ConvertTo-Json -Compress
-$validWaitlistResponse = Invoke-WebRequest -Uri "$BaseUrl/api/waitlist" -Method Post -ContentType "application/json" -Body $validWaitlistBody -UseBasicParsing
-Assert-HttpStatus $validWaitlistResponse 200 "POST /api/waitlist"
+if ($supabaseReady) {
+  $validWaitlistResponse = Invoke-WebRequest -Uri "$BaseUrl/api/waitlist" -Method Post -ContentType "application/json" -Body $validWaitlistBody -UseBasicParsing
+  Assert-HttpStatus $validWaitlistResponse 200 "POST /api/waitlist"
+} else {
+  Write-Host "SKIP  valid waitlist signup skipped because Supabase env vars are incomplete" -ForegroundColor Yellow
+}
 
 Write-Step "Locked admin"
 $admin = Invoke-WebRequest -Uri "$BaseUrl/admin" -UseBasicParsing
