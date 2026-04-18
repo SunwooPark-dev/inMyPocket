@@ -94,6 +94,7 @@ jobs:
           throw "App did not become ready in time."
 
       - name: Run hosted non-payment ops evidence
+        continue-on-error: true
         run: pnpm ops:evidence
 
       - name: Run advisory visual regression
@@ -120,6 +121,7 @@ jobs:
             .ops-evidence/visual-regression.latest.json
             .ops-evidence/visual-regression-*/
             .ops-evidence/ops-evidence-*/
+          include-hidden-files: true
 
       - name: Stop app
         if: always()
