@@ -11,7 +11,6 @@ import {
   getProofLevelForOperationsStatus,
   readLatestHostedProofObservation,
   type OperatorProofArtifact,
-  type HostedOpsAttestation,
   type HostedProofRequestArtifact,
   type LatestOpsEvidenceRun,
   type OpsEvidenceManifest,
