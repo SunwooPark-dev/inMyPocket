@@ -234,6 +234,13 @@ select {
   gap: 12px;
 }
 
+.retailer-card__address {
+  margin: 4px 0 0;
+  color: #44554d;
+  line-height: 1.45;
+  font-size: var(--font-size-meta);
+}
+
 .stat-card span,
 .retailer-card__meta,
 .comparison-cell__meta,
@@ -329,8 +336,15 @@ select {
 
 .retailer-card__heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+
+.retailer-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .retailer-card__header h3,
@@ -606,6 +620,65 @@ select {
   gap: 12px;
 }
 
+.location-experience {
+  display: grid;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+.location-form,
+.nearest-store-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card-secondary);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(22, 36, 29, 0.05);
+}
+
+.location-form {
+  display: grid;
+  gap: 14px;
+}
+
+.location-form__label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.location-form input {
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.location-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nearest-store-card {
+  display: grid;
+  gap: 10px;
+}
+
+.nearest-store-card h2 {
+  margin: 0;
+  font-family: var(--font-heading), serif;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.nearest-store-card__meta {
+  margin: 0;
+  color: #44554d;
+  font-size: var(--font-size-meta);
+  line-height: 1.6;
+}
+
 .waitlist-form--inactive {
   gap: 8px;
 }
@@ -879,6 +952,10 @@ select {
 
   .button,
   .chip {
+    width: 100%;
+  }
+
+  .location-form__actions .button {
     width: 100%;
   }
 

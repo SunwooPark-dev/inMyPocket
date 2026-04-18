@@ -173,7 +173,7 @@ test("captureWeeklyUpdatesLead repairs a misleading pending_checkout weekly-upda
   ]);
 });
 
-test("buildWaitlistSubmissionRequest keeps founding-member checkout intact when payment is enabled", () => {
+test("buildWaitlistSubmissionRequest stays on the weekly-updates waitlist path even when checkoutEnabled is true", () => {
   assert.deepEqual(
     buildWaitlistSubmissionRequest({
       checkoutEnabled: true,
@@ -181,13 +181,13 @@ test("buildWaitlistSubmissionRequest keeps founding-member checkout intact when 
       zipCode: "30328"
     }),
     {
-      endpoint: "/api/founding-member/checkout",
+      endpoint: "/api/waitlist",
       body: {
         email: "person@example.com",
         zipCode: "30328",
-        plan: "founding-member"
+        plan: WEEKLY_UPDATES_PLAN_CODE
       },
-      expectsCheckoutUrl: true
+      expectsCheckoutUrl: false
     }
   );
 });

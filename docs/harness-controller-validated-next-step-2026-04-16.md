@@ -4,7 +4,7 @@ Purpose: reconcile three independent feedback passes (business, UX/conversion, i
 
 ## 0. Final integrated verdict
 
-Verdict: 조건부 On-track. 다만 “다음 한 걸음”은 한 문장으로 끝내면 오판한다.
+Verdict: On-track. Governance rollout proof is now closed, so the next implementation slice is no longer “hosted governance proof closure” but Demand Harness 1.
 
 검증 결과는 두 문장을 동시에 요구한다.
 
@@ -112,33 +112,32 @@ Final corrected thesis:
 
 ## 3. Frozen execution order
 
-### Step 1 — Governance Kernel 1 (implement now)
+### Step 1 — Governance Kernel 1 rollout proof (completed this cycle)
 
 Goal:
-- make public publication approval-safe instead of privacy-only
+- close the hosted rollout gap for the already-landed Governance Kernel 1 repo slice
 
-Required scope:
-1. schema fields for lifecycle and approval metadata
-2. minimal ZIP snapshot model
-3. governed `published_price_observations` semantics
-4. stale/store_call/invalidated/retired exclusion in public eligibility
-5. public merge/read logic that no longer lets newer unapproved rows win
+Completed scope:
+1. applied the repo migration to the linked hosted Supabase project
+2. verified hosted governance schema/view presence
+3. repaired and verified the hosted `30328` governed seed path
+4. re-ran governed runtime proof for populated and empty-state branches
+5. refreshed controller/status docs from the resulting proof
 
-Minimum acceptance criteria:
-- `draft`, `review_required`, `approved` rows are not public
-- public rows require active snapshot membership
-- stale rows are excluded from public output
-- `store_call` rows are excluded from public output for this slice
-- `invalidated` and `retired` rows are excluded
-- newer unapproved rows do not suppress older published rows
+Acceptance result:
+- hosted project exposes `price_publication_snapshots`
+- hosted `published_price_observations` exposes governance columns including `published_snapshot_id`
+- hosted `30328` seed is publishable under the governed contract and currently surfaces `16` Kroger regular rows
+- runtime proof covers both governed populated data and governed empty-state behavior
+- docs no longer describe CLI PATH install or repo seed readiness as open blockers
 
 Primary evidence files to update or verify:
-- `supabase/migrations/202604130001_inmypoket_foundations.sql`
-- `src/lib/observation-repository.ts`
-- `src/lib/observation-feed.ts`
-- tests for governed publication semantics
+- `docs/governance-runtime-apply-controller-2026-04-16.md`
+- `docs/live-smoke-checklist.md`
+- hosted Supabase proof output for project `ndifsahnedlokhfvohcl`
+- runtime smoke evidence for populated and empty-state branches
 
-### Step 2 — Demand Harness 1 (spec now, implement immediately after Step 1)
+### Step 2 — Demand Harness 1 (execute now)
 
 Goal:
 - convert the existing non-payment signup capability into a real learning lane
@@ -209,7 +208,7 @@ Use this prompt for the next implementation run:
 
 This document intentionally overrides the simplistic interpretation that “demand comes first” means “implement demand UI first.”
 
-After cross-checking code, schema, and docs, the safer and smarter interpretation is:
+After cross-checking code, schema, docs, and live tooling, the safer and smarter interpretation is:
 - business priority = demand learning
-- implementation priority = governance kernel
-- product immediate-after = demand bridge UX
+- implementation priority = Demand Harness 1
+- governance proof remains the already-closed prerequisite, not the active blocker

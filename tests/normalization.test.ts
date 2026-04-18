@@ -199,10 +199,10 @@ test("accepted local limits expose the current operator boundaries", () => {
 
   assert.equal(limits.length, 3);
   assert.equal(limits.some((limit) => limit.key === "admin-unlock-local" && limit.status === "accepted"), true);
-  assert.equal(limits.some((limit) => limit.key === "payment-deferred" && limit.status === "deferred"), true);
+  assert.equal(limits.some((limit) => limit.key === "monetization-nonpayment" && limit.status === "accepted"), true);
 });
 
-test("operator next actions prioritize hosted observation and deferred payment follow-up", () => {
+test("operator next actions prioritize hosted observation without a payment follow-up when payment is not planned", () => {
   const actions = getOperatorNextActions({
     verifiedAt: "2026-04-16T09:47:28.054Z",
     formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
@@ -216,16 +216,16 @@ test("operator next actions prioritize hosted observation and deferred payment f
     visualRegressionStatus: "green",
     bundleName: "ops-evidence-20260415-185147",
     operationsProofStatus: "materially complete",
-    paymentStatus: "deferred",
+    paymentStatus: "not_planned",
     liveSupabaseProofStatus: "passed",
     errors: []
   });
 
   assert.equal(actions[0]?.key, "observe-hosted");
-  assert.equal(actions.some((action) => action.key === "reopen-payment"), true);
+  assert.equal(actions.some((action) => action.key === "reopen-payment"), false);
 });
 
-test("external blockers expose hosted-proof and payment dependencies", () => {
+test("external blockers expose hosted-proof only when payment is not planned", () => {
   const blockers = getExternalBlockers({
     verifiedAt: "2026-04-16T09:47:28.054Z",
     formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
@@ -239,16 +239,16 @@ test("external blockers expose hosted-proof and payment dependencies", () => {
     visualRegressionStatus: "green",
     bundleName: "ops-evidence-20260415-185147",
     operationsProofStatus: "materially complete",
-    paymentStatus: "deferred",
+    paymentStatus: "not_planned",
     liveSupabaseProofStatus: "passed",
     errors: []
   });
 
   assert.equal(blockers.some((blocker) => blocker.key === "hosted-proof"), true);
-  assert.equal(blockers.some((blocker) => blocker.key === "payment-proof"), true);
+  assert.equal(blockers.some((blocker) => blocker.key === "payment-proof"), false);
 });
 
-test("external proof handoff exposes required inputs and expected outputs", () => {
+test("external proof handoff keeps hosted proof only when payment is not planned", () => {
   const handoff = getExternalProofHandoff({
     verifiedAt: "2026-04-16T09:47:28.054Z",
     formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
@@ -262,18 +262,18 @@ test("external proof handoff exposes required inputs and expected outputs", () =
     visualRegressionStatus: "green",
     bundleName: "ops-evidence-20260415-185147",
     operationsProofStatus: "materially complete",
-    paymentStatus: "deferred",
+    paymentStatus: "not_planned",
     liveSupabaseProofStatus: "passed",
     errors: []
   });
 
   assert.equal(handoff.some((item) => item.key === "hosted-proof"), true);
-  assert.equal(handoff.some((item) => item.key === "payment-proof"), true);
+  assert.equal(handoff.some((item) => item.key === "payment-proof"), false);
   assert.equal((handoff[0]?.requiredInputs.length ?? 0) > 0, true);
   assert.equal((handoff[0]?.expectedOutputs.length ?? 0) > 0, true);
 });
 
-test("external proof handoff exposes required inputs and expected outputs", () => {
+test("external proof handoff still exposes hosted required inputs and expected outputs", () => {
   const handoff = getExternalProofHandoff({
     verifiedAt: "2026-04-16T09:47:28.054Z",
     formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
@@ -287,13 +287,13 @@ test("external proof handoff exposes required inputs and expected outputs", () =
     visualRegressionStatus: "green",
     bundleName: "ops-evidence-20260415-185147",
     operationsProofStatus: "materially complete",
-    paymentStatus: "deferred",
+    paymentStatus: "not_planned",
     liveSupabaseProofStatus: "passed",
     errors: []
   });
 
   assert.equal(handoff.some((item) => item.key === "hosted-proof"), true);
-  assert.equal(handoff.some((item) => item.key === "payment-proof"), true);
+  assert.equal(handoff.some((item) => item.key === "payment-proof"), false);
   assert.equal(handoff[0]?.requiredInputs.length! > 0, true);
   assert.equal(handoff[0]?.expectedOutputs.length! > 0, true);
 });

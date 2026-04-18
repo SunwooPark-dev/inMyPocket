@@ -8,7 +8,7 @@ It consolidates the evidence needed to support the current milestone claim:
 
 - public UX is stable enough for the pilot
 - operations proof is materially complete
-- payment is deferred until Stripe secrets are supplied
+- direct payment is not part of the active product model
 
 Primary refresh path:
 
@@ -16,6 +16,12 @@ Primary refresh path:
 pnpm ops:evidence
 pnpm ops:verify
 ```
+
+Codex first-wave operator loop:
+
+- If proof or readiness looks stale, start with `docs/codex-operator-bootstrap.md`.
+- Use `docs/codex-automation-playbooks.md` for approved recurring follow-up lanes.
+- Use `docs/codex-memory-guidelines.md` only for durable context that does not belong directly in repo docs.
 
 Generated evidence is written as an immutable per-run bundle under `.ops-evidence/ops-evidence-<timestamp>/`.
 Each bundle contains `report.md`, `manifest.json`, and a dedicated `ui-assets/` folder for screenshots and printable PDF output.
@@ -54,9 +60,7 @@ Last refreshed: 2026-04-16
 
 ### Not ready
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_ID_FOUNDING_MEMBER`
+- none required for the current non-payment milestone
 
 ## Public Route Proof
 
@@ -82,7 +86,7 @@ Current immutable bundle pointers:
 
 - `.ops-evidence/LATEST.md`
 - `.ops-evidence/latest-run.json`
-- `.ops-evidence/ops-evidence-20260415-185147/report.md`
+- latest bundle report under `.ops-evidence/ops-evidence-<timestamp>/report.md`
 
 ## Observation and Evidence Proof
 
@@ -90,6 +94,7 @@ Verified through local smoke:
 
 - manual observation save succeeds
 - saved observation appears in recent observations
+- fresh manual save stays visible only in the admin/recent-observation lane until a governed publication step occurs
 - evidence route redirects for authenticated admin
 - evidence route is blocked for unauthenticated access
 
@@ -99,6 +104,7 @@ Verified through CLI query + REST checks:
 
 - `published_price_observations` exists
 - public published view returns `200`
+- public published view continues to return governed rows without exposing the fresh unpublished manual save
 - private base table `price_observations` returns `401 permission denied`
 - deny policies exist on:
   - `price_observations`
@@ -112,6 +118,7 @@ Verified through CLI query + REST checks:
 ```powershell
 pnpm typecheck
 pnpm lint
+pnpm test
 pnpm build
 pnpm smoke:local -SkipPayment
 .\scripts\supabase-cli.ps1 db query --linked "select tablename, policyname, cmd, roles from pg_policies where schemaname = 'public' and tablename in ('price_observations','observation_evidence','founding_member_signups') order by tablename, policyname;"
@@ -124,15 +131,17 @@ pnpm smoke:local -SkipPayment
 
 - [x] `pnpm typecheck`
 - [x] `pnpm lint`
+- [x] `pnpm test`
 - [x] `pnpm build`
 - [x] local public/admin smoke
 - [x] Supabase public/private proof
-- [ ] Stripe payment proof
+- [ ] Hosted proof observation from a real GitHub run
 
-Current verdict:
+Current verified local verdict on 2026-04-16:
 
 - Public UX and operations proof are acceptable for the current milestone.
-- Payment remains outside the current merge gate until secrets are supplied.
+- Engineering gate is green after generating Next route/layout types before `tsc`.
+- Direct payment is not part of the active milestone. Hosted proof remains the primary external blocker.
 
 ## Hosted Proof Handoff
 
@@ -140,13 +149,17 @@ Current state:
 
 - `.github/workflows/ci.yml` already defines the hosted `ops-evidence-gate`
 - `.ops-evidence/hosted-attestation.json` is still marked `verificationScope: local-simulated`
-- the current workspace is not attached to a recoverable git remote, so a real hosted run cannot be linked from local evidence alone
+- the current workspace is attached to `origin` (`https://github.com/SunwooPark-dev/inMyPocket.git`)
+- no real hosted run has been observed for local `HEAD`
+- the remote default-branch workflow currently visible through GitHub does not yet match the local hosted proof lane
+- see `docs/hosted-proof-observation-2026-04-16.md` for the observed mismatch details
+- use `.ops-evidence/hosted-proof-request.md` or `pnpm ops:show-hosted-proof-request` when you need the exact external request packet
 
 To close this blocker, provide:
 
-- the matching GitHub repository
-- a PR or push that triggers GitHub Actions
-- the resulting workflow run link or uploaded artifact link
+- a PR or push that triggers the hosted proof lane from the current local workflow definition, or
+- the exact branch / PR / workflow run where the hosted `ops-evidence-gate` exists, or
+- the resulting workflow run link / uploaded artifact link for that hosted proof lane
 
 Expected hosted outputs:
 
@@ -154,13 +167,8 @@ Expected hosted outputs:
 - non-simulated `.ops-evidence/hosted-attestation.json`
 - `/admin` and `release-health` showing hosted observation beyond local simulation
 
-## Deferred Proof
+## Monetization Note
 
-Stripe payment proof is intentionally deferred until the missing Stripe secrets are supplied.
+Donation and advertising support are the current monetization directions under consideration.
 
-When payment is reopened, collect:
-
-- checkout start proof
-- webhook receipt proof
-- signup state transition proof
-- replay/duplicate behavior notes
+If the product later reintroduces direct payment, create a new monetization proof lane instead of reusing the old Stripe gate by default.

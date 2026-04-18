@@ -1,12 +1,6 @@
 export type WaitlistAudience = "self" | "caregiver";
 
 export function getWaitlistIntroCopy(checkoutEnabled: boolean, audience: WaitlistAudience) {
-  if (checkoutEnabled) {
-    return audience === "caregiver"
-      ? "We’ll guide you through a secure signup so you can keep helping a parent or older relative shop with more confidence."
-      : "We’ll keep this simple and guide you through a secure signup before we send updates.";
-  }
-
   return audience === "caregiver"
     ? "Get one plain-English weekly email you can use while shopping for a parent or older family member."
     : "Get one plain-English weekly email showing where this basket is cheapest in your area.";
@@ -33,10 +27,10 @@ export function getWaitlistSubmitLabel(
   checkoutEnabled: boolean
 ) {
   if (status === "saving") {
-    return checkoutEnabled ? "Opening secure signup..." : "Starting weekly updates...";
+    return "Starting weekly updates...";
   }
 
-  return checkoutEnabled ? "Continue to secure signup" : "Get weekly updates";
+  return "Get weekly updates";
 }
 
 export function normalizeWaitlistMessage(message: string) {

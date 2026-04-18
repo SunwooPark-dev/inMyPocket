@@ -17,8 +17,8 @@ type CheckoutPayload = {
 export async function POST(request: Request) {
   if (!isPaymentFlowEnabled()) {
     return Response.json(
-      { error: "Payment flow is not configured in this environment." },
-      { status: 503 }
+      { error: "Payment-based membership is not part of the current product model." },
+      { status: 410 }
     );
   }
 

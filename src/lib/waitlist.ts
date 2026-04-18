@@ -46,18 +46,6 @@ export function buildWaitlistSubmissionRequest(input: {
   email: string;
   zipCode: string;
 }) {
-  if (input.checkoutEnabled) {
-    return {
-      endpoint: "/api/founding-member/checkout",
-      body: {
-        email: input.email,
-        zipCode: input.zipCode,
-        plan: "founding-member"
-      },
-      expectsCheckoutUrl: true
-    } as const;
-  }
-
   return {
     endpoint: "/api/waitlist",
     body: {

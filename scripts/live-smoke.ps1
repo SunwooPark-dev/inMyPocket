@@ -111,12 +111,17 @@ try {
   exit 1
 }
 Assert-HttpStatus $homeResponse 200 "GET /"
+Assert-Contains $homeResponse.Content "Checking today.{1,2}s prices and comparing the same basket across nearby stores\." "GET / streamed loading shell copy"
+Assert-Contains $homeResponse.Content "Enter ZIP code" "homepage shows ZIP input"
 $printable = Invoke-WebRequest -Uri "$BaseUrl/printable" -UseBasicParsing
 Assert-HttpStatus $printable 200 "GET /printable"
+Assert-Contains $printable.Content "Preparing your grocery plan" "GET /printable streamed loading shell headline"
 $couponScenario = Invoke-WebRequest -Uri "$BaseUrl/?zip=30328&scenario=coupon_required_total" -UseBasicParsing
 Assert-HttpStatus $couponScenario 200 "GET /?scenario=coupon_required_total"
+Assert-Contains $couponScenario.Content "Checking today.{1,2}s prices and comparing the same basket across nearby stores\." "GET /?scenario=coupon_required_total streamed loading shell copy"
 $weeklyAdPrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=30328&scenario=weekly_ad_partial_total" -UseBasicParsing
 Assert-HttpStatus $weeklyAdPrintable 200 "GET /printable?scenario=weekly_ad_partial_total"
+Assert-Contains $weeklyAdPrintable.Content "Preparing your grocery plan" "GET /printable?scenario=weekly_ad_partial_total streamed loading shell headline"
 
 Write-Step "Weekly updates route"
 try {
@@ -287,7 +292,7 @@ if ($adminReady) {
 
       Write-Step "Public Supabase view proof"
       $publicRows = curl.exe -s `
-        "$($envMap['NEXT_PUBLIC_SUPABASE_URL'])/rest/v1/published_price_observations?select=store_id,canonical_product_id,price_type,source_url&store_id=eq.kroger-30328&canonical_product_id=eq.apples&price_type=eq.regular&source_url=eq.https://www.kroger.com/p/gala-apples" `
+        "$($envMap['NEXT_PUBLIC_SUPABASE_URL'])/rest/v1/published_price_observations?select=id,store_id,canonical_product_id,price_type,source_url,collected_at,published_at&store_id=eq.kroger-30328&price_type=eq.regular&limit=25" `
         -H "apikey: $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])" `
         -H "Authorization: Bearer $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])"
       if ($publicRows -match '"message"') {
@@ -295,9 +300,23 @@ if ($adminReady) {
       }
       $publicPayload = ConvertFrom-JsonSafe $publicRows "published_price_observations query"
       if (-not $publicPayload -or $publicPayload.Count -lt 1) {
-        throw "Saved observation was not visible through published_price_observations"
+        throw "published_price_observations did not return governed published rows"
       }
-      Write-Host "PASS  public view exposes the saved sanitized observation" -ForegroundColor Green
+      Write-Host "PASS  public view still exposes governed published rows" -ForegroundColor Green
+
+      $savedCollectedAt = [DateTimeOffset]::Parse($savedObservation.collectedAt).UtcDateTime
+      $leakedPublicRows = @(
+        $publicPayload | Where-Object {
+          $_.source_url -eq $savedObservation.sourceUrl -and
+          (Get-Date $_.collected_at).ToUniversalTime() -eq $savedCollectedAt
+        }
+      )
+
+      if ($leakedPublicRows.Count -gt 0) {
+        throw "Unpublished manual observation leaked through published_price_observations"
+      }
+
+      Write-Host "PASS  unpublished manual observation stays out of published_price_observations" -ForegroundColor Green
     } finally {
       Remove-Item $saveResponsePath -ErrorAction SilentlyContinue
     }
@@ -318,11 +337,9 @@ if ($SkipSupabaseProof) {
 }
 
 if ($SkipPayment) {
-  Write-Host "SKIP  Stripe payment smoke skipped" -ForegroundColor Yellow
-} elseif (-not $stripeReady) {
-  Write-Host "SKIP  Stripe payment smoke skipped because Stripe env vars are incomplete" -ForegroundColor Yellow
+  Write-Host "SKIP  Direct payment is not part of the current product model" -ForegroundColor Yellow
 } else {
-  Write-Host "TODO  Complete Stripe test-mode checkout and verify webhook-driven paid status." -ForegroundColor Yellow
+  Write-Host "INFO  Stripe env vars are present, but direct payment is not part of the current product model." -ForegroundColor Yellow
 }
 
 Write-Host ""

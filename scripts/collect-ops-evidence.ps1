@@ -369,11 +369,7 @@ $liveSupabaseProofPassed =
   $evidenceBucketSucceeded -and
   $storagePoliciesSucceeded -and
   $restProof.Succeeded
-$paymentStatus = if ($paymentReady) {
-  "Payment secrets are present. Reopen the Stripe proof lane."
-} else {
-  "Payment proof is deferred because one or more Stripe secrets are missing."
-}
+$paymentStatus = "Direct payment is not part of the current product model. Donation and advertising support are being considered instead."
 $liveSupabaseProofStatus = if (-not $liveSupabaseProofAvailable) {
   "unavailable in this environment"
 } elseif ($liveSupabaseProofPassed) {
@@ -405,7 +401,7 @@ Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz")
 
 - Public UX: stable enough for the current milestone
 - Operations proof: $operationsProofStatus
-- Payment: $(if ($paymentReady) { 'ready to reopen' } else { 'deferred' })
+- Payment: not planned
 
 ## Bundle paths
 
@@ -511,7 +507,7 @@ $bundleManifest = [ordered]@{
   generatedAt = (Get-Date).ToString("o")
   publicUxStatus = "stable enough for the current milestone"
   operationsProofStatus = $operationsProofStatus
-  paymentStatus = $(if ($paymentReady) { "ready_to_reopen" } else { "deferred" })
+  paymentStatus = "not_planned"
   paymentReady = $paymentReady
   bundleDir = $bundleDirContractPath
   reportPath = $reportPathContractPath
@@ -555,7 +551,7 @@ foreach ($key in $paymentKeys) {
   uiAssetsDir = $uiAssetsDirContractPath
   manifestPath = $manifestPathContractPath
   operationsProofStatus = $operationsProofStatus
-  paymentStatus = $(if ($paymentReady) { "ready_to_reopen" } else { "deferred" })
+  paymentStatus = "not_planned"
   liveSupabaseProofStatus = $liveSupabaseProofStatus
   stepStatus = $bundleManifest.stepStatus
 } | ConvertTo-Json

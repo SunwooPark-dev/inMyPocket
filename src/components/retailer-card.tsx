@@ -4,6 +4,8 @@ type RetailerCardProps = {
   summary: BasketSummary;
   cheapestTotal: number;
   rank: number;
+  distanceMiles?: number | null;
+  isNearest?: boolean;
 };
 
 function recommendationLabel(rank: number) {
@@ -13,14 +15,16 @@ function recommendationLabel(rank: number) {
 }
 
 function membershipLine(summary: BasketSummary) {
-  if (summary.retailer.membershipLabel === "No membership") {
-    return "Standard public pricing";
-  }
-
   return "Member pricing shown separately";
 }
 
-export function RetailerCard({ summary, cheapestTotal, rank }: RetailerCardProps) {
+export function RetailerCard({
+  summary,
+  cheapestTotal,
+  rank,
+  distanceMiles = null,
+  isNearest = false
+}: RetailerCardProps) {
   const savingsGap = Math.max(0, summary.total - cheapestTotal);
   const recommendation = recommendationLabel(rank);
   const membership = membershipLine(summary);
@@ -38,9 +42,15 @@ export function RetailerCard({ summary, cheapestTotal, rank }: RetailerCardProps
             style={{ backgroundColor: summary.retailer.color }}
             aria-hidden="true"
           />
-          <h3>{summary.retailer.name}</h3>
+          <div>
+            <h3>{summary.retailer.name}</h3>
+            <p className="retailer-card__address">{summary.store.streetAddress}</p>
+          </div>
         </div>
-        {isBest ? <span className="pill pill--good">{recommendation}</span> : null}
+        <div className="retailer-card__badges">
+          {isBest ? <span className="pill pill--good">{recommendation}</span> : null}
+          {isNearest ? <span className="pill pill--quiet">Closest</span> : null}
+        </div>
       </div>
 
       <p className="retailer-card__price">${summary.total.toFixed(2)}</p>
@@ -51,6 +61,11 @@ export function RetailerCard({ summary, cheapestTotal, rank }: RetailerCardProps
       </p>
       {showMembershipLine ? (
         <p className="retailer-card__meta">{membership}</p>
+      ) : null}
+      {distanceMiles !== null ? (
+        <p className="retailer-card__meta">
+          About {distanceMiles.toFixed(1)} miles away
+        </p>
       ) : null}
     </article>
   );

@@ -9,8 +9,10 @@ import {
   deriveHostedObservationStatus,
   deriveVerificationScope,
   getProofLevelForOperationsStatus,
+  readLatestHostedProofObservation,
   type OperatorProofArtifact,
   type HostedOpsAttestation,
+  type HostedProofRequestArtifact,
   type LatestOpsEvidenceRun,
   type OpsEvidenceManifest,
   type ReleaseHealthVerdict,
@@ -97,12 +99,15 @@ async function main() {
   const operatorProofMarkdownPath = join(evidenceDir, "operator-proof.md");
   const externalHandoffJsonPath = join(evidenceDir, "external-proof-handoff.json");
   const externalHandoffMarkdownPath = join(evidenceDir, "external-proof-handoff.md");
+  const hostedProofRequestJsonPath = join(evidenceDir, "hosted-proof-request.json");
+  const hostedProofRequestMarkdownPath = join(evidenceDir, "hosted-proof-request.md");
   const visualRegressionLatestPath = join(evidenceDir, "visual-regression.latest.json");
   const errors: string[] = [];
 
   let latestRun: LatestOpsEvidenceRun | null = null;
   let manifest: OpsEvidenceManifest | null = null;
   const hostedAttestation = await readLatestHostedOpsAttestation();
+  const hostedProofObservation = await readLatestHostedProofObservation();
   const visualRegression = await readLatestVisualRegression();
 
   if (!(await pathExists(latestRunPath))) {
@@ -205,7 +210,12 @@ async function main() {
   await writeFile(releaseHealthJsonPath, `${JSON.stringify(health, null, 2)}\n`, "utf8");
   await writeFile(releaseHealthMarkdownPath, buildReleaseHealthMarkdown(health), "utf8");
 
-  const operatorProof = createOperatorProofSummary(health, latestRun, visualRegression);
+  const operatorProof = createOperatorProofSummary(
+    health,
+    latestRun,
+    visualRegression,
+    hostedProofObservation
+  );
   if (operatorProof) {
     const operatorProofArtifact: OperatorProofArtifact = {
       generatedAt: health.verifiedAt,
@@ -326,6 +336,66 @@ async function main() {
 
     await writeFile(externalHandoffJsonPath, `${JSON.stringify(externalHandoffArtifact, null, 2)}\n`, "utf8");
     await writeFile(externalHandoffMarkdownPath, externalHandoffMarkdown, "utf8");
+
+    if (hostedProofObservation && health.hostedObservationStatus !== "observed-hosted") {
+      const hostedProofRequest: HostedProofRequestArtifact = {
+        generatedAt: health.verifiedAt,
+        proofLabel: operatorProof.proofLabel,
+        request:
+          "Provide one canonical GitHub-hosted proof run or artifact for the hosted ops-evidence lane that matches the current local workflow definition.",
+        preferredInputOrder: [
+          "Workflow run URL",
+          "Artifact URL",
+          "Branch or PR URL"
+        ],
+        acceptIf: [
+          "The workflow matches the canonical hosted proof lane rather than a simple build-only CI flow.",
+          "The artifact contains LATEST.md, latest-run.json, release-health.json, release-health.md, hosted-attestation.json, and the hosted ops-evidence bundle.",
+          "hosted-attestation.json is not local-simulated."
+        ],
+        rejectIf: [
+          "Only the default build-only CI workflow is visible.",
+          "The artifact is missing any canonical ops-evidence file.",
+          "The hosted attestation remains local-simulated."
+        ],
+        closeCondition:
+          "Hosted proof closes only when a provided workflow run or artifact satisfies every accept-if rule; otherwise the blocker stays open with the failure reason recorded."
+      };
+
+      const hostedProofRequestMarkdown = [
+        "# Hosted Proof Request",
+        "",
+        `Generated: ${health.verifiedAt}`,
+        `Proof scope: ${operatorProof.proofLabel}`,
+        "",
+        "## Request",
+        "",
+        hostedProofRequest.request,
+        "",
+        "## Preferred input order",
+        "",
+        ...hostedProofRequest.preferredInputOrder.map((item, index) => `${index + 1}. ${item}`),
+        "",
+        "## Accept if",
+        "",
+        ...hostedProofRequest.acceptIf.map((item) => `- ${item}`),
+        "",
+        "## Reject if",
+        "",
+        ...hostedProofRequest.rejectIf.map((item) => `- ${item}`),
+        "",
+        "## Close condition",
+        "",
+        hostedProofRequest.closeCondition
+      ].join("\n") + "\n";
+
+      await writeFile(
+        hostedProofRequestJsonPath,
+        `${JSON.stringify(hostedProofRequest, null, 2)}\n`,
+        "utf8"
+      );
+      await writeFile(hostedProofRequestMarkdownPath, hostedProofRequestMarkdown, "utf8");
+    }
   }
 
   if (errors.length > 0) {

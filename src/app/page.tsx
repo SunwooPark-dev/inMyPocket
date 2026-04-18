@@ -14,9 +14,10 @@ import {
 } from "../lib/compare";
 import { RetailerId } from "../lib/domain";
 import { isPaymentFlowEnabled } from "../lib/env";
+import { resolveZipRequest } from "../lib/location-context";
 import { getPublicEffectiveObservations } from "../lib/server-storage";
+import { LocationAwareStoreExperience } from "../components/location-aware-store-experience";
 import { ProductComparisonTable } from "../components/product-comparison-table";
-import { RetailerCard } from "../components/retailer-card";
 import { SectionCard } from "../components/section-card";
 import { WaitlistForm } from "../components/waitlist-form";
 
@@ -87,9 +88,8 @@ function getMatchSummary(
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = (await searchParams) ?? {};
-  const zipCode = PILOT_CLUSTERS.some((cluster) => cluster.zipCode === params.zip)
-    ? params.zip!
-    : "30328";
+  const zipResolution = resolveZipRequest(params.zip);
+  const zipCode = zipResolution.pricingZip;
   const scenario = resolveComparisonScenario(params.scenario);
   const paymentEnabled = isPaymentFlowEnabled();
   const observations = await getPublicEffectiveObservations();
@@ -98,6 +98,37 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const nextBest = summaries[1];
   const rows = buildItemRows(zipCode, scenario, observations);
   const lastCollectedAt = getLastCollectedAt(zipCode, observations);
+  const locationExperienceProps = {
+    currentZip: zipCode,
+    initialZipInput: zipResolution.invalidZip || zipResolution.unsupportedZip ? params.zip?.trim() ?? "" : zipCode,
+    scenario,
+    hasExplicitZip: zipResolution.hasExplicitZip,
+    initialLocationSource: zipResolution.locationSource
+  } as const;
+
+  if (zipResolution.invalidZip || zipResolution.unsupportedZip) {
+    return (
+      <main className="page-shell">
+        <section className="hero">
+          <div className="hero__content">
+            <p className="hero__eyebrow">North Atlanta pilot for older households</p>
+            <h1>See which grocery store is cheapest today for your regular basket.</h1>
+            <p className="hero__lede">
+              {zipResolution.invalidZip
+                ? "Enter a valid 5-digit ZIP code to compare pilot-area stores."
+                : `We don’t support ${zipResolution.unsupportedZip} yet. Choose one of our pilot areas to continue.`}
+            </p>
+          </div>
+        </section>
+
+        <LocationAwareStoreExperience
+          {...locationExperienceProps}
+          invalidZip={zipResolution.invalidZip}
+          unsupportedZip={zipResolution.unsupportedZip}
+        />
+      </main>
+    );
+  }
 
   if (!cheapest) {
     return (
@@ -116,6 +147,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           </div>
         </section>
+        <LocationAwareStoreExperience
+          {...locationExperienceProps}
+          summaries={[]}
+        />
       </main>
     );
   }
@@ -186,25 +221,33 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <li>{checkedLabel}</li>
               <li>{reliabilityCopy}</li>
             </ul>
+            <div className="hero__actions">
+              <Link className="button button--secondary" href="#weekly-updates">
+                Get weekly updates for this basket
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="store-strip">
-        <div className="store-strip__header">
-          <h2>Compare nearby stores</h2>
+      <LocationAwareStoreExperience
+        {...locationExperienceProps}
+        summaries={summaries}
+      />
+
+      <SectionCard title="Keep this basket answer each week" variant="support">
+        <div className="offer-card" id="weekly-updates">
+          <p className="hero__lede">
+            Get one simple weekly email showing where this basket is cheapest before you shop again.
+          </p>
+          <ul className="compact-list compact-list--wide">
+            <li>Non-payment updates only in the current environment.</li>
+            <li>Use it for yourself or if you shop for a parent or older family member.</li>
+            <li>We keep the same basket and trust notes used in today&apos;s answer.</li>
+          </ul>
+          <WaitlistForm defaultZip={zipCode} checkoutEnabled={paymentEnabled} />
         </div>
-        <div className="retailer-grid">
-          {summaries.map((summary, index) => (
-            <RetailerCard
-              key={summary.store.id}
-              summary={summary}
-              cheapestTotal={cheapest.total}
-              rank={index}
-            />
-          ))}
-        </div>
-      </section>
+      </SectionCard>
 
       <SectionCard title="Why you can trust today’s answer">
         <ul className="compact-list compact-list--wide">
@@ -275,11 +318,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </details>
       </section>
 
-      <SectionCard title="Get weekly updates" variant="support">
-        <div className="offer-card">
-          <WaitlistForm defaultZip={zipCode} checkoutEnabled={paymentEnabled} />
-        </div>
-      </SectionCard>
     </main>
   );
 }

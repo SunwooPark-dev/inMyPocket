@@ -5,11 +5,10 @@ export default function FoundingMemberSuccessPage() {
     <main className="page-shell printable-page">
       <section className="hero hero--compact">
         <div className="hero__content">
-          <p className="hero__eyebrow">Founding member</p>
-          <h1>Payment received</h1>
+          <p className="hero__eyebrow">Membership lane inactive</p>
+          <h1>Payment checkout is not active</h1>
           <p className="hero__lede">
-            Your payment was submitted. We will confirm founding member access by email after the
-            payment processor finishes status updates.
+            This project currently operates on a non-payment model while donation and advertising support are being considered.
           </p>
           <div className="hero__actions">
             <Link className="button" href="/">

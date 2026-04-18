@@ -124,6 +124,57 @@ export type HostedOpsAttestation = {
   environment: "hosted-ci" | "local-simulation";
 };
 
+export type HostedProofObservation = {
+  recordedAt: string;
+  repo: string;
+  branch: string;
+  localHead: string;
+  result: "blocked" | "observed-hosted";
+  blockerType?: "remote_workflow_mismatch" | "missing_run" | "missing_artifact";
+  primaryBlocker?: string;
+  secondaryBlocker?: string;
+  summary: string;
+  localWorkflow?: {
+    path: string;
+    sha: string;
+    name: string;
+  };
+  remoteWorkflow?: {
+    path: string;
+    ref: string;
+    sha: string;
+    name: string;
+  };
+  branchTracking?: {
+    remoteRef: string;
+    remoteHead?: string;
+    aheadBy?: number;
+    behindBy?: number;
+  };
+  localAheadCommits?: Array<{
+    sha: string;
+    subject: string;
+  }>;
+  localChangedFiles?: string[];
+  proofCriticalChangedFiles?: string[];
+  observedRunUrl?: string;
+  artifactUrl?: string;
+  artifactName?: string;
+  preferredInputOrder?: string[];
+  recommendedCommandSet?: string[];
+  requiredNextInputs?: string[];
+};
+
+export type HostedProofRequestArtifact = {
+  generatedAt: string;
+  proofLabel: string;
+  request: string;
+  preferredInputOrder: string[];
+  acceptIf: string[];
+  rejectIf: string[];
+  closeCondition: string;
+};
+
 export type HostedOpsAttestationSummary = {
   commitShaShort: string;
   workflowRunId: string;
@@ -506,6 +557,17 @@ export async function readLatestHostedOpsAttestation() {
   }
 }
 
+export async function readLatestHostedProofObservation() {
+  const observationPath = join(process.cwd(), ".ops-evidence", "hosted-proof-observation.json");
+
+  try {
+    const raw = await readFile(observationPath, "utf8");
+    return JSON.parse(stripBom(raw)) as HostedProofObservation;
+  } catch {
+    return null;
+  }
+}
+
 export async function readLatestHostedOpsAttestationSummary() {
   try {
     const parsed = await readLatestHostedOpsAttestation();
@@ -545,7 +607,8 @@ export async function readLatestVisualRegression() {
 export function createOperatorProofSummary(
   releaseHealth: ReleaseHealthVerdict | null,
   latestRun: LatestOpsEvidenceRun | null,
-  visualRegression: VisualRegressionLatest | null = null
+  visualRegression: VisualRegressionLatest | null = null,
+  hostedProofObservation: HostedProofObservation | null = null
 ): OperatorProofSummary | null {
   if (!releaseHealth) {
     return null;
@@ -592,6 +655,8 @@ export function createOperatorProofSummary(
       detail:
         releaseHealth.paymentStatus === "deferred"
           ? "Payment remains intentionally outside the current merge gate until Stripe test-mode secrets are supplied."
+          : releaseHealth.paymentStatus === "not_planned"
+            ? "Direct payment is not part of the current product model; donation and advertising support are being considered instead."
           : `Payment status is ${releaseHealth.paymentStatus}.`
     }
   ];
@@ -618,9 +683,12 @@ export function createOperatorProofSummary(
     },
     items,
     acceptedLimits: getAcceptedLimits(),
-    externalBlockers: getExternalBlockers(createReleaseHealthSummary(releaseHealth)),
-    externalProofHandoff: getExternalProofHandoff(createReleaseHealthSummary(releaseHealth)),
-    nextActions: getOperatorNextActions(createReleaseHealthSummary(releaseHealth))
+    externalBlockers: getExternalBlockers(createReleaseHealthSummary(releaseHealth), hostedProofObservation),
+    externalProofHandoff: getExternalProofHandoff(
+      createReleaseHealthSummary(releaseHealth),
+      hostedProofObservation
+    ),
+    nextActions: getOperatorNextActions(createReleaseHealthSummary(releaseHealth), hostedProofObservation)
   };
 }
 

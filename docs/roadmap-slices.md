@@ -72,3 +72,33 @@ Ordering rule:
   - more durable audit/evidence handling
   - clearer operator incident response flow
 - **Do not combine with:** early pilot polish work
+
+## Slice 7: Codex Support Boundary Documentation
+
+- **Goal:** make the repo-scoped Codex feature boundary explicit so operators do not confuse app-level marketing capabilities with required repo setup
+- **Prerequisites:** current README and MVP operations docs must reflect the active Codex baseline
+- **Primary outputs:**
+  - supported / partial / out-of-scope Codex capability matrix
+  - operator-facing link targets from README and runbooks
+  - explicit notes about which capabilities are environment- or app-plan-dependent
+- **Do not combine with:** broad product feature work
+
+## Slice 8: Automation and Memory Workflow Adoption
+
+- **Goal:** standardize the subset of Codex automations and memory that materially helps this repo's recurring ops/readiness work
+- **Prerequisites:** support boundary docs complete and at least one recurring operator task chosen
+- **Primary outputs:**
+  - one or two approved recurring automation playbooks for evidence/readiness follow-up
+  - working agreement for what belongs in automation prompts vs repo docs vs OMX memory
+  - memory hygiene rules for durable operator preferences and handoff context
+- **Do not combine with:** speculative plugin sprawl or full personal-productivity workflows
+
+## Slice 9: GitHub Review Workflow Adoption
+
+- **Goal:** formalize the already-available GitHub review-comment workflow only after observed PR-review volume or explicit external collaboration makes it worth standardizing
+- **Prerequisites:** support boundary docs complete and first-wave automation/memory docs are stable enough that the repo's recurring ops path is already covered
+- **Primary outputs:**
+  - documented PR review triage workflow using the existing GitHub plugin/tooling
+  - review-resolution checklist for local verification before reply/resolve
+  - operator notes for when to stay in-app vs when to fall back to local git/test commands
+- **Do not combine with:** SSH/devbox or browser automation rollout

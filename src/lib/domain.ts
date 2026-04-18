@@ -46,6 +46,8 @@ export interface PilotCluster {
   label: string;
   county: string;
   note: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RetailerProfile {
@@ -65,6 +67,14 @@ export interface StoreLocation {
   zipCode: string;
   label: string;
   addressHint: string;
+  storeNumber: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  isActive: boolean;
 }
 
 export interface AnchorBasketItem {
@@ -123,6 +133,37 @@ export interface BasketSummary {
   coverageRate: number;
   blockers: string[];
   publishReady: boolean;
+}
+
+export type LocationMode = "zip" | "gps";
+export type LocationSource = "url_zip" | "remembered_zip" | "default_zip" | "browser_geo";
+
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+export interface ZipResolutionResult {
+  pricingZip: string;
+  invalidZip: string | null;
+  unsupportedZip: string | null;
+  hasExplicitZip: boolean;
+  locationSource: Exclude<LocationSource, "browser_geo">;
+}
+
+export interface StoreDistanceContext {
+  storeId: string;
+  retailerId: RetailerId;
+  distanceMiles: number | null;
+}
+
+export interface NearestStoreContext {
+  pricingZip: string;
+  locationSource: LocationSource;
+  distanceSource: "zip-centroid" | "browser-geo";
+  nearestOverallStore: StoreLocation | null;
+  nearestOverallDistanceMiles: number | null;
+  distancesByStoreId: Record<string, number | null>;
 }
 
 export interface ItemComparisonRow {

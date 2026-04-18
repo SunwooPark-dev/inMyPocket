@@ -5,19 +5,25 @@ export const PILOT_CLUSTERS: PilotCluster[] = [
     zipCode: "30328",
     label: "Sandy Springs",
     county: "Fulton County",
-    note: "North Atlanta suburban core pilot cluster"
+    note: "North Atlanta suburban core pilot cluster",
+    latitude: 33.924269,
+    longitude: -84.378538
   },
   {
     zipCode: "30022",
     label: "Alpharetta East",
     county: "Fulton County",
-    note: "Higher-income suburban cluster with strong retailer overlap"
+    note: "Higher-income suburban cluster with strong retailer overlap",
+    latitude: 34.0491,
+    longitude: -84.2415
   },
   {
     zipCode: "30076",
     label: "Roswell North",
     county: "Fulton County",
-    note: "North Fulton cluster with strong caregiver search fit"
+    note: "North Fulton cluster with strong caregiver search fit",
+    latitude: 34.056701,
+    longitude: -84.343688
   }
 ];
 
@@ -54,29 +60,143 @@ export const RETAILERS: RetailerProfile[] = [
   }
 ];
 
-export const STORES: StoreLocation[] = PILOT_CLUSTERS.flatMap((cluster) => [
+export const STORES: StoreLocation[] = [
   {
-    id: `kroger-${cluster.zipCode}`,
-    retailerId: "kroger" as const,
-    zipCode: cluster.zipCode,
-    label: `${cluster.label} Kroger`,
-    addressHint: `${cluster.label} pilot store`
+    id: "kroger-30328",
+    retailerId: "kroger",
+    zipCode: "30328",
+    label: "City Walk Kroger",
+    addressHint: "Sandy Springs tracked branch",
+    storeNumber: "00467",
+    streetAddress: "227 Sandy Springs Pl NE",
+    city: "Sandy Springs",
+    state: "GA",
+    postalCode: "30328",
+    latitude: 33.9266,
+    longitude: -84.3786,
+    isActive: true
   },
   {
-    id: `aldi-${cluster.zipCode}`,
-    retailerId: "aldi" as const,
-    zipCode: cluster.zipCode,
-    label: `${cluster.label} ALDI`,
-    addressHint: `${cluster.label} pilot store`
+    id: "aldi-30328",
+    retailerId: "aldi",
+    zipCode: "30328",
+    label: "Roswell Road ALDI",
+    addressHint: "Sandy Springs tracked branch",
+    storeNumber: "l897",
+    streetAddress: "6336C Roswell Rd",
+    city: "Sandy Springs",
+    state: "GA",
+    postalCode: "30328",
+    latitude: 33.928061,
+    longitude: -84.380147,
+    isActive: true
   },
   {
-    id: `walmart-${cluster.zipCode}`,
-    retailerId: "walmart" as const,
-    zipCode: cluster.zipCode,
-    label: `${cluster.label} Walmart`,
-    addressHint: `${cluster.label} pilot store`
+    id: "walmart-30328",
+    retailerId: "walmart",
+    zipCode: "30328",
+    label: "Winters Chapel Walmart Neighborhood Market",
+    addressHint: "Nearest tracked Walmart branch for Sandy Springs",
+    storeNumber: "5482",
+    streetAddress: "5025 Winters Chapel Rd",
+    city: "Dunwoody",
+    state: "GA",
+    postalCode: "30360",
+    latitude: 33.94249,
+    longitude: -84.269546,
+    isActive: true
+  },
+  {
+    id: "kroger-30022",
+    retailerId: "kroger",
+    zipCode: "30022",
+    label: "Saddlebrook Kroger",
+    addressHint: "Alpharetta East tracked branch",
+    storeNumber: "00390",
+    streetAddress: "10945 State Bridge Rd",
+    city: "Alpharetta",
+    state: "GA",
+    postalCode: "30022",
+    latitude: 34.0487913,
+    longitude: -84.2239991,
+    isActive: true
+  },
+  {
+    id: "aldi-30022",
+    retailerId: "aldi",
+    zipCode: "30022",
+    label: "Jones Bridge ALDI",
+    addressHint: "Johns Creek tracked branch for Alpharetta East",
+    storeNumber: "l903",
+    streetAddress: "10955 Jones Bridge Rd, #134",
+    city: "Johns Creek",
+    state: "GA",
+    postalCode: "30022",
+    latitude: 34.047609,
+    longitude: -84.220621,
+    isActive: true
+  },
+  {
+    id: "walmart-30022",
+    retailerId: "walmart",
+    zipCode: "30022",
+    label: "Windward Parkway Walmart Supercenter",
+    addressHint: "Nearest tracked Walmart branch for Alpharetta East",
+    storeNumber: "2941",
+    streetAddress: "5200 Windward Pkwy",
+    city: "Alpharetta",
+    state: "GA",
+    postalCode: "30004",
+    latitude: 34.088028,
+    longitude: -84.270561,
+    isActive: true
+  },
+  {
+    id: "kroger-30076",
+    retailerId: "kroger",
+    zipCode: "30076",
+    label: "Centennial Village Kroger",
+    addressHint: "Roswell North tracked branch",
+    storeNumber: "00441",
+    streetAddress: "2300 Holcomb Bridge Rd",
+    city: "Roswell",
+    state: "GA",
+    postalCode: "30076",
+    latitude: 34.0053,
+    longitude: -84.2945,
+    isActive: true
+  },
+  {
+    id: "aldi-30076",
+    retailerId: "aldi",
+    zipCode: "30076",
+    label: "Mansell Road ALDI",
+    addressHint: "Roswell North tracked branch",
+    storeNumber: "roswell-mansell",
+    streetAddress: "600 Mansell Rd",
+    city: "Roswell",
+    state: "GA",
+    postalCode: "30076",
+    latitude: 34.041,
+    longitude: -84.3275,
+    isActive: true
+  },
+  {
+    id: "walmart-30076",
+    retailerId: "walmart",
+    zipCode: "30076",
+    label: "Mansell Road Walmart Supercenter",
+    addressHint: "Roswell North tracked branch",
+    storeNumber: "1578",
+    streetAddress: "970 Mansell Rd",
+    city: "Roswell",
+    state: "GA",
+    postalCode: "30076",
+    latitude: 34.0447254,
+    longitude: -84.333242,
+    isActive: true
   }
-]);
+];
 
 export const ANCHOR_BASKET: AnchorBasketItem[] = [
   {

@@ -18,6 +18,15 @@ type ExternalProofHandoffArtifact = {
     blocker: string;
     requiredInputs: string[];
     expectedOutputs: string[];
+    repo?: string;
+    branch?: string;
+    localHead?: string;
+    remoteHead?: string;
+    workflowPath?: string;
+    workflowName?: string;
+    artifactName?: string;
+    preferredInputOrder?: string[];
+    recommendedCommandSet?: string[];
   }>;
   nextActions: Array<{
     key: string;
@@ -56,8 +65,35 @@ async function main() {
   for (const item of artifact.externalProofHandoff) {
     lines.push(`- ${item.title}`);
     lines.push(`  Blocker: ${item.blocker}`);
+    if (item.repo) {
+      lines.push(`  Repo: ${item.repo}`);
+    }
+    if (item.branch) {
+      lines.push(`  Branch: ${item.branch}`);
+    }
+    if (item.localHead) {
+      lines.push(`  Local HEAD: ${item.localHead}`);
+    }
+    if (item.remoteHead) {
+      lines.push(`  Remote HEAD: ${item.remoteHead}`);
+    }
+    if (item.workflowName) {
+      lines.push(`  Workflow: ${item.workflowName}`);
+    }
+    if (item.workflowPath) {
+      lines.push(`  Workflow path: ${item.workflowPath}`);
+    }
+    if (item.artifactName) {
+      lines.push(`  Artifact: ${item.artifactName}`);
+    }
+    if (item.preferredInputOrder?.length) {
+      lines.push(`  Preferred input order: ${item.preferredInputOrder.join(" ; ")}`);
+    }
     lines.push(`  Required inputs: ${item.requiredInputs.join(" ; ")}`);
     lines.push(`  Expected outputs: ${item.expectedOutputs.join(" ; ")}`);
+    if (item.recommendedCommandSet?.length) {
+      lines.push(`  Recommended command set: ${item.recommendedCommandSet.join(" ; ")}`);
+    }
   }
 
   lines.push("", "Next actions:");

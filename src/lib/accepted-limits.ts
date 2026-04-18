@@ -23,11 +23,11 @@ export function getAcceptedLimits() {
       reopenWhen: "The operator evidence bundle falls out of sync with the underlying proof steps."
     },
     {
-      key: "payment-deferred",
-      title: "Stripe payment proof remains deferred",
-      status: "deferred",
-      detail: "Payment is outside the current merge gate until Stripe test-mode secrets are supplied.",
-      reopenWhen: "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and STRIPE_PRICE_ID_FOUNDING_MEMBER are available."
+      key: "monetization-nonpayment",
+      title: "Payment is not part of the current business model",
+      status: "accepted",
+      detail: "The current public product runs on a non-payment path while donation and advertising support are being considered.",
+      reopenWhen: "The product intentionally decides to reactivate direct payment or paid membership."
     }
   ] satisfies AcceptedLimit[];
 }

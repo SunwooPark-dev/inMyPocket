@@ -15,6 +15,8 @@ export const appEnv = {
   adminSessionSecret: readEnv("ADMIN_SESSION_SECRET")
 };
 
+export const monetizationModel = "donation-and-ads" as const;
+
 export function isSupabaseConfigured() {
   return Boolean(
     appEnv.supabaseUrl &&
@@ -32,5 +34,5 @@ export function isStripeConfigured() {
 }
 
 export function isPaymentFlowEnabled() {
-  return isSupabaseConfigured() && isStripeConfigured();
+  return false;
 }

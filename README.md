@@ -5,6 +5,7 @@
 ## What is implemented
 
 - Senior-friendly landing page with large-type basket comparison
+- ZIP-first homepage flow with closest tracked-store context layered onto the cheapest-store answer
 - Seeded pilot data for 3 retailers across 3 ZIP clusters with Supabase-backed live overrides
 - Anchor basket normalization and scenario pricing logic
 - Provenance, trust badges, and publish-gate summaries
@@ -12,7 +13,7 @@
 - Weekly-updates signup lane with self vs caregiver audience framing
 - Admin unlock flow with signed cookie session
 - Admin manual observation save flow with optional evidence upload
-- Stripe Checkout and webhook routes are implemented in code; live payment proof remains deferred until Stripe test-mode secrets are supplied
+- Donation and advertising are the current monetization directions under consideration; direct payment is not part of the active product path
 - MVP operations documentation
 
 ## Commands
@@ -37,14 +38,28 @@ pnpm visual:update-baseline
 pnpm visual:check
 ```
 
+## Codex Operator Entrypoint
+
+- Start with `docs/codex-operator-bootstrap.md` when you need to decide which Codex lane to use in this repo.
+- Use `docs/codex-support-scope.md` as the canonical capability boundary.
+- Use `docs/codex-automation-playbooks.md` and `docs/codex-memory-guidelines.md` through the bootstrap runbook, not as parallel policy sources.
+
 ## Notes
 
+- Codex baseline for this repo was refreshed on `2026-04-16` against the official [Codex changelog](https://developers.openai.com/codex/changelog).
+- Recommended local Codex CLI baseline is `0.121.0` or newer. OpenAI published `Codex CLI 0.121.0` on `2026-04-15`.
+- For ChatGPT-sign-in Codex workflows, prefer `gpt-5.4` for primary planning/judgment and `gpt-5.4-mini` for lighter exploration or subagent work. OpenAI added `gpt-5.4-mini` across Codex surfaces on `2026-03-17`.
+- Do not pin new ChatGPT-sign-in Codex workflows to `gpt-5.2-codex`, `gpt-5.1-codex*`, `gpt-5.1`, or `gpt-5`. OpenAI removed those from the ChatGPT-sign-in model picker on `2026-04-07` and from Codex on `2026-04-14`.
+- If a recommended model is missing locally, update the Codex CLI, IDE extension, or Codex app first, then confirm account, plan, and environment availability before troubleshooting project-specific config.
+- The current repo-scoped Codex support boundary is documented in `docs/codex-support-scope.md`.
+- The first-wave Codex adoption docs are `docs/codex-automation-playbooks.md` and `docs/codex-memory-guidelines.md`.
+- The broader adoption sequence is documented in `docs/codex-adoption-plan.md`.
 - Runtime persistence is Supabase-first. Seed observations remain as fallback records until live entries override them.
 - Public basket pages now read from a sanitized published view rather than the full private observations table.
 - Evidence files are expected to live in a private Supabase Storage bucket.
 - Base tables and the `observation-evidence` bucket now carry explicit deny policies for `anon` and `authenticated`; public access is limited to the sanitized published view.
-- Founding member checkout is Stripe Checkout based and requires the env vars listed in `.env.example`.
-- In the current documented runtime state, payment remains explicitly deferred until Stripe test-mode secrets are supplied.
+- Stripe legacy routes remain in the repo as dormant code paths, but direct payment is not part of the active product model.
+- The current monetization direction is non-payment product access with donation and advertising support under consideration.
 - Admin unlock now requires both `ADMIN_ACCESS_TOKEN` and `ADMIN_SESSION_SECRET`.
 - Admin unlock now surfaces remaining attempts and cooldown guidance in the form, based on the current local rate-limit policy.
 - `/admin` now also exposes a recent unlock-incident list for the current local runtime, so operators can inspect recent invalid/throttled unlock activity without tailing server logs.
@@ -56,11 +71,13 @@ pnpm visual:check
 - `/admin` now also shows the latest advisory visual regression verdict, so operators can see visual drift status alongside ops and hosted provenance.
 - `/admin` now also shows proof freshness and concrete stale reasons, so a newer visual or hosted artifact cannot be mistaken for the state reflected in the last `release-health` verification.
 - The public compare/print flow now preserves all six comparison scenarios instead of silently collapsing non-default views on the printable route.
+- Homepage now accepts a 5-digit ZIP as the primary location control, remembers the last supported ZIP locally, and adds nearest tracked-store context without changing cheapest-store ranking.
 - The weekly-updates form now supports self vs caregiver copy/trust framing and emits lightweight browser-side waitlist events for the homepage lane.
 - Member-only, coupon-required, club-only, and weekly-ad values stay separated from the default basket total.
 - The repo-local bootstrap script writes `.env.local` in the correct project root and prints the correct Stripe webhook route.
 - Supabase is invoked through `pnpm dlx supabase@latest`, and Stripe can be run from the repo-local wrapper if `.tools/stripe-cli/stripe.exe` exists.
 - PowerShell-backed `pnpm` tasks now auto-select `powershell`, `pwsh`, or `powershell.exe`, so WSL/Linux shells do not need a hardcoded `powershell` binary name.
+- Core `pnpm` commands that rely on `next`, `eslint`, or `tsc` now resolve those CLIs through a repo-local Node launcher, so mixed Windows/WSL installs do not depend on shell-specific `.bin` shims.
 - `pnpm visual:check` now auto-selects `python` or `python3` before running the visual verifier.
 - When working from WSL/Linux, install dependencies inside that environment instead of reusing Windows-installed `node_modules`; if `pnpm build` reports missing Next Turbopack native bindings on `linux/x64`, remove `node_modules` and reinstall (`CI=true pnpm install --frozen-lockfile`).
 - `/api/waitlist` remains the live non-payment weekly-updates path when checkout is disabled; `/api/founding-member/checkout` stays available for the Stripe-backed payment lane when Stripe test-mode secrets are supplied.
@@ -89,3 +106,11 @@ pnpm visual:check
   - `docs/accepted-risks.md`
   - `docs/roadmap-slices.md`
   - `docs/operator-evidence-bundle.md`
+  - `docs/codex-operator-bootstrap.md`
+  - `docs/codex-support-scope.md`
+  - `docs/codex-adoption-plan.md`
+  - `docs/codex-automation-playbooks.md`
+  - `docs/codex-memory-guidelines.md`
+  - `docs/codex-handoff-2026-04-16-typecheck-docs.md` (historical typecheck-recovery checkpoint; use current status/roadmap docs for live continuation)
+
+

@@ -1,4 +1,4 @@
-import type { ReleaseHealthSummary } from "./ops-evidence.ts";
+import type { HostedProofObservation, ReleaseHealthSummary } from "./ops-evidence.ts";
 
 export type OperatorNextAction = {
   key: string;
@@ -8,7 +8,10 @@ export type OperatorNextAction = {
   priority: "now" | "next" | "later";
 };
 
-export function getOperatorNextActions(releaseHealth: ReleaseHealthSummary | null) {
+export function getOperatorNextActions(
+  releaseHealth: ReleaseHealthSummary | null,
+  hostedProofObservation: HostedProofObservation | null = null
+) {
   const actions: OperatorNextAction[] = [];
 
   if (!releaseHealth) {
@@ -43,11 +46,19 @@ export function getOperatorNextActions(releaseHealth: ReleaseHealthSummary | nul
   }
 
   if (releaseHealth.hostedObservationStatus !== "observed-hosted") {
+    const reason = hostedProofObservation?.summary
+      ? `The current proof scope is still local-only or local-simulated. ${hostedProofObservation.summary}`
+      : "The current proof scope is still local-only or local-simulated.";
+    const commands = hostedProofObservation?.requiredNextInputs?.length
+      ? (hostedProofObservation.recommendedCommandSet?.length
+          ? hostedProofObservation.recommendedCommandSet
+          : hostedProofObservation.requiredNextInputs)
+      : ["Push or open a PR to trigger GitHub Actions", "Inspect uploaded .ops-evidence artifacts"];
     actions.push({
       key: "observe-hosted",
       title: "Observe a real hosted CI run",
-      reason: "The current proof scope is still local-only or local-simulated.",
-      commands: ["Push or open a PR to trigger GitHub Actions", "Inspect uploaded .ops-evidence artifacts"],
+      reason,
+      commands,
       priority: "next"
     });
   }

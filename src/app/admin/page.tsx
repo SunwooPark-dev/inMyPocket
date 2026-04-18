@@ -5,7 +5,7 @@ import { readRecentAdminUnlockIncidents } from "../../lib/admin-unlock-audit";
 import { AdminPreviewForm } from "../../components/admin-preview-form";
 import { AdminUnlockForm } from "../../components/admin-unlock-form";
 import { DAILY_RUNBOOK, PUBLISH_GATES, SOURCE_GOVERNANCE } from "../../lib/catalog";
-import { appEnv, isPaymentFlowEnabled, isSupabaseConfigured, isStripeConfigured } from "../../lib/env";
+import { appEnv, isPaymentFlowEnabled, isSupabaseConfigured, isStripeConfigured, monetizationModel } from "../../lib/env";
 import {
   readLatestHostedOpsAttestationSummary,
   readLatestOpsEvidenceSummary,
@@ -75,11 +75,11 @@ export default async function AdminPage() {
             <span className={`pill ${isSupabaseConfigured() ? "pill--good" : "pill--warn"}`}>
               Supabase {isSupabaseConfigured() ? "ready" : "missing config"}
             </span>
-            <span className={`pill ${isStripeConfigured() ? "pill--good" : "pill--warn"}`}>
-              Stripe {isStripeConfigured() ? "ready" : "deferred in this environment"}
+            <span className="pill pill--quiet">
+              Monetization {monetizationModel}
             </span>
             <span className={`pill ${isPaymentFlowEnabled() ? "pill--good" : "pill--warn"}`}>
-            Checkout {isPaymentFlowEnabled() ? "enabled" : "deferred"}
+            Checkout {isPaymentFlowEnabled() ? "enabled" : "inactive"}
           </span>
           <span
             className={`pill ${
@@ -98,8 +98,7 @@ export default async function AdminPage() {
             ))}
           </ul>
           <p className="hero__lede">
-            Live smoke helper: run `scripts/bootstrap-local.ps1`, then forward Stripe to
-            `/api/stripe/webhook` only when the payment lane is reopened.
+            Live smoke helper: run `scripts/bootstrap-local.ps1`. Direct payment is not part of the current product model, so Stripe forwarding is only relevant if the business model changes in the future.
           </p>
         </SectionCard>
       ) : null}

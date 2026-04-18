@@ -7,12 +7,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$nextCmd = Join-Path $projectRoot "node_modules\\.bin\\next.cmd"
+$nextCommandCandidates = @(
+  (Join-Path $projectRoot "node_modules/.bin/next"),
+  (Join-Path $projectRoot "node_modules/.bin/next.cmd")
+)
+
+$nextCmd = $nextCommandCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 
 . (Join-Path $PSScriptRoot "port-lib.ps1")
 
-if (-not (Test-Path -LiteralPath $nextCmd)) {
-  Write-Host "Could not find Next.js CLI at $nextCmd" -ForegroundColor Red
+if (-not $nextCmd) {
+  Write-Host "Could not find Next.js CLI in node_modules/.bin (checked next and next.cmd)" -ForegroundColor Red
   Write-Host "Run 'pnpm install' first." -ForegroundColor Yellow
   exit 1
 }

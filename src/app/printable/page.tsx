@@ -6,6 +6,7 @@ import {
   resolveComparisonScenario
 } from "../../lib/comparison-scenarios";
 import { buildItemRows, getPublishableBasketSummaries } from "../../lib/compare";
+import { resolveZipRequest } from "../../lib/location-context";
 import { getPublicEffectiveObservations } from "../../lib/server-storage";
 import { PrintButton } from "../../components/print-button";
 
@@ -20,9 +21,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PrintablePage({ searchParams }: PrintablePageProps) {
   const params = (await searchParams) ?? {};
-  const zipCode = PILOT_CLUSTERS.some((cluster) => cluster.zipCode === params.zip)
-    ? params.zip!
-    : "30328";
+  const zipResolution = resolveZipRequest(params.zip);
+  const zipCode = zipResolution.pricingZip;
   const scenario = resolveComparisonScenario(params.scenario);
   const cluster = PILOT_CLUSTERS.find((candidate) => candidate.zipCode === zipCode) ?? PILOT_CLUSTERS[0];
   const observations = await getPublicEffectiveObservations();
@@ -30,6 +30,33 @@ export default async function PrintablePage({ searchParams }: PrintablePageProps
   const cheapest = summaries[0];
   const rows = buildItemRows(zipCode, scenario, observations);
   const nextBest = summaries[1];
+
+  if (zipResolution.invalidZip || zipResolution.unsupportedZip) {
+    return (
+      <main className="page-shell printable-page">
+        <section className="print-header">
+          <div className="print-summary">
+            <p className="hero__eyebrow">Large-print shopping list</p>
+            <h1>Pilot area required</h1>
+            <p className="print-summary__stat">
+              {zipResolution.invalidZip
+                ? "Enter a valid 5-digit ZIP code on the homepage first."
+                : `We don’t support ${zipResolution.unsupportedZip} yet.`}
+            </p>
+            <p className="print-summary__note">
+              Printable checklists stay cheapest-only for our current pilot ZIPs.
+            </p>
+          </div>
+
+          <div className="print-header__actions">
+            <Link className="print-back-link" href={`/?scenario=${scenario}`}>
+              Back to dashboard
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (!cheapest) {
     return (
@@ -61,6 +88,9 @@ export default async function PrintablePage({ searchParams }: PrintablePageProps
               : "This is the best available option today"}
           </p>
           <p className="print-summary__note">This checklist follows today’s lowest-cost store plan.</p>
+          <p className="print-summary__note">
+            Closest-store context stays on the homepage so this printable list stays price-first.
+          </p>
         </div>
 
         <div className="print-header__actions">
