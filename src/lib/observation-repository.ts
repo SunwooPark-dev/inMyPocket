@@ -40,10 +40,10 @@ function toOptionalNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function mapObservationRecord(
+export function mapStoredObservationRecord(
   record: ObservationRecord,
-  evidenceMap: Map<string, ObservationEvidence>
-): PriceObservation {
+  evidenceMap: Map<string, ObservationEvidence> = new Map()
+): GovernedPublicObservation {
   const evidenceId =
     record.evidence_id === null || record.evidence_id === undefined
       ? null
@@ -76,7 +76,20 @@ function mapObservationRecord(
     evidenceOriginalName: evidence?.originalName ?? null,
     evidenceContentType: evidence?.contentType ?? null,
     evidenceByteSize: evidence?.byteSize ?? null,
-    evidenceUploadedAt: evidence?.uploadedAt ?? null
+    evidenceUploadedAt: evidence?.uploadedAt ?? null,
+    reviewStatus:
+      (record.review_status ? String(record.review_status) : null) as ObservationReviewStatus | null,
+    approvedAt: toOptionalIsoString(record.approved_at),
+    approvedBy: record.approved_by ? String(record.approved_by) : null,
+    publishedAt: toOptionalIsoString(record.published_at),
+    publishedSnapshotId: record.published_snapshot_id ? String(record.published_snapshot_id) : null,
+    snapshotIsActive:
+      record.snapshot_is_active === null || record.snapshot_is_active === undefined
+        ? null
+        : Boolean(record.snapshot_is_active),
+    snapshotCoverageRate: toOptionalNumber(record.snapshot_coverage_rate),
+    retiredAt: toOptionalIsoString(record.retired_at),
+    invalidatedAt: toOptionalIsoString(record.invalidated_at)
   };
 }
 
@@ -145,7 +158,7 @@ export async function readStoredObservations() {
     .filter((value): value is string => Boolean(value));
   const evidenceMap = await fetchEvidenceMap([...new Set(evidenceIds)]);
 
-  return records.map((record) => mapObservationRecord(record, evidenceMap));
+  return records.map((record) => mapStoredObservationRecord(record, evidenceMap));
 }
 
 export async function readPublicStoredObservations() {
@@ -224,7 +237,7 @@ export async function saveObservation(
     ? new Map<string, ObservationEvidence>([[evidence.id, evidence]])
     : new Map<string, ObservationEvidence>();
 
-  return mapObservationRecord(data as ObservationRecord, evidenceMap);
+  return mapStoredObservationRecord(data as ObservationRecord, evidenceMap);
 }
 
 export async function saveImportedObservation(rawObservation: Partial<PriceObservation>) {
