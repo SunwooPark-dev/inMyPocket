@@ -93,7 +93,7 @@ export function AdminPreviewForm({ canSave }: AdminPreviewFormProps) {
     }
 
     setSaveStatus("done");
-    setSaveMessage("Observation saved. The dashboard now prefers this live record over the seed value.");
+    setSaveMessage("Private observation saved for review. It is not public until approved and published.");
     setEvidenceFile(null);
     setNotes("");
     router.refresh();
