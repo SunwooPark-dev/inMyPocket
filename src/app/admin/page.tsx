@@ -13,7 +13,13 @@ import {
   readLatestReleaseHealthSummary,
   readLatestVisualRegressionSummary
 } from "../../lib/ops-evidence";
-import { getRecentStoredObservations } from "../../lib/server-storage";
+import { getRecentStoredObservations } from "../../lib/admin-observation-storage";
+import {
+  buildOperatorObservationQueue,
+  formatOperatorObservationQueueState,
+  getOperatorObservationQueueNextAction,
+  summarizeOperatorObservationQueue
+} from "../../lib/operator-observation-queue";
 import { SectionCard } from "../../components/section-card";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +33,15 @@ export default async function AdminPage() {
   const visualRegression = unlocked ? await readLatestVisualRegressionSummary() : null;
   const recentUnlockIncidents = unlocked ? readRecentAdminUnlockIncidents() : [];
   const recentObservations =
-    unlocked && isSupabaseConfigured() ? await getRecentStoredObservations() : [];
+    unlocked && isSupabaseConfigured() ? await getRecentStoredObservations(50) : [];
+  const privateObservationQueue = buildOperatorObservationQueue(recentObservations);
+  const privateObservationQueueSummary = summarizeOperatorObservationQueue(privateObservationQueue);
+  const privateObservationQueueNextAction = getOperatorObservationQueueNextAction(
+    privateObservationQueueSummary
+  );
+  const privateObservationQueueItemsById = new Map(
+    privateObservationQueue.items.map((item) => [item.observation.id, item])
+  );
   const readinessItems = [
     ["NEXT_PUBLIC_SUPABASE_URL", Boolean(appEnv.supabaseUrl)],
     ["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", Boolean(appEnv.supabasePublishableKey)],
@@ -388,39 +402,83 @@ export default async function AdminPage() {
       </SectionCard>
 
       {unlocked ? (
-        <SectionCard eyebrow="Saved live records" title="Recent stored observations">
+        <SectionCard eyebrow="Private observation queue" title="Recent stored observations">
+          <p className="hero__lede">
+            These saved records stay private until governed publication approves and snapshots them.
+          </p>
+          <div className="badge-row">
+            <span className="pill pill--quiet">
+              Stored {privateObservationQueueSummary.totalItems}
+            </span>
+            <span
+              className={`pill ${
+                privateObservationQueueSummary.warningItems > 0 ? "pill--warn" : "pill--good"
+              }`}
+            >
+              Needs review {privateObservationQueueSummary.warningItems}
+            </span>
+            <span className="pill pill--quiet">
+              Clear {privateObservationQueueSummary.clearItems}
+            </span>
+            {privateObservationQueueSummary.priorityStates.map((state) => (
+              <span key={state} className="pill pill--warn">
+                {formatOperatorObservationQueueState(state)} {privateObservationQueueSummary.stateCounts[state]}
+              </span>
+            ))}
+          </div>
+          <p className="hero__lede">
+            Next action: {privateObservationQueueNextAction.label}
+            {privateObservationQueueNextAction.count > 0
+              ? ` (${privateObservationQueueNextAction.count})`
+              : ""}
+            . {privateObservationQueueNextAction.detail}
+          </p>
           {recentObservations.length === 0 ? (
-            <p className="hero__lede">No live manual observations stored yet. Saved records will appear here.</p>
+            <p className="hero__lede">No private manual observations stored yet. Saved records will appear here.</p>
           ) : (
             <div className="comparison-list">
-              {recentObservations.map((observation) => (
-                <article key={observation.id} className="comparison-row">
-                  <div className="comparison-row__heading">
-                    <h3>{observation.canonicalProductId}</h3>
-                    <p>
-                      {observation.storeId} · {observation.priceType} · {observation.collectedAt}
-                    </p>
-                  </div>
-                  <div className="badge-row">
-                    <span className="pill pill--quiet">${observation.priceAmount.toFixed(2)}</span>
-                    <span className="pill pill--quiet">
-                      {observation.measurementValue} {observation.measurementUnit}
-                    </span>
-                    <span className="pill pill--quiet">{observation.comparabilityGrade}</span>
-                    {observation.evidenceId ? (
-                      <Link className="pill pill--quiet" href={`/api/admin/evidence/${observation.evidenceId}`}>
-                        Evidence: {observation.evidenceOriginalName ?? "download"}
-                      </Link>
-                    ) : (
-                      <span className="pill pill--quiet">No evidence</span>
-                    )}
-                  </div>
-                  <ul className="compact-list">
-                    <li>{observation.sourceUrl}</li>
-                    <li>{observation.notes ?? "No operator note"}</li>
-                  </ul>
-                </article>
-              ))}
+              {recentObservations.map((observation) => {
+                const queueItem = privateObservationQueueItemsById.get(observation.id);
+                const states = queueItem?.states ?? [];
+
+                return (
+                  <article key={observation.id} className="comparison-row">
+                    <div className="comparison-row__heading">
+                      <h3>{observation.canonicalProductId}</h3>
+                      <p>
+                        {observation.storeId} · {observation.priceType} · {observation.collectedAt}
+                      </p>
+                    </div>
+                    <div className="badge-row">
+                      <span className="pill pill--quiet">${observation.priceAmount.toFixed(2)}</span>
+                      <span className="pill pill--quiet">
+                        {observation.measurementValue} {observation.measurementUnit}
+                      </span>
+                      <span className="pill pill--quiet">{observation.comparabilityGrade}</span>
+                      {states.length > 0 ? (
+                        states.map((state) => (
+                          <span key={state} className="pill pill--warn">
+                            {formatOperatorObservationQueueState(state)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="pill pill--quiet">Private queue: no local warning</span>
+                      )}
+                      {observation.evidenceId ? (
+                        <Link className="pill pill--quiet" href={`/api/admin/evidence/${observation.evidenceId}`}>
+                          Evidence: {observation.evidenceOriginalName ?? "download"}
+                        </Link>
+                      ) : (
+                        <span className="pill pill--warn">No evidence</span>
+                      )}
+                    </div>
+                    <ul className="compact-list">
+                      <li>{observation.sourceUrl}</li>
+                      <li>{observation.notes ?? "No operator note"}</li>
+                    </ul>
+                  </article>
+                );
+              })}
             </div>
           )}
         </SectionCard>
