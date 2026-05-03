@@ -10,7 +10,7 @@ type BaseSeed = {
   notes?: string;
 };
 
-const BASE_MATRIX: Record<RetailerId, Record<string, BaseSeed>> = {
+const BASE_MATRIX: Partial<Record<RetailerId, Record<string, BaseSeed>>> = {
   kroger: {
     bananas: { priceAmount: 1.79, measurementValue: 1, measurementUnit: "lb", packLabel: "loose / 1 lb" },
     apples: { priceAmount: 4.99, measurementValue: 3, measurementUnit: "lb", packLabel: "3 lb bag" },
@@ -79,7 +79,7 @@ const BASE_MATRIX: Record<RetailerId, Record<string, BaseSeed>> = {
   }
 };
 
-const ZIP_MULTIPLIERS: Record<string, Record<RetailerId, number>> = {
+const ZIP_MULTIPLIERS: Partial<Record<string, Partial<Record<RetailerId, number>>>> = {
   "30328": { kroger: 1, aldi: 1, walmart: 1 },
   "30022": { kroger: 1.03, aldi: 1.02, walmart: 1.01 },
   "30076": { kroger: 0.99, aldi: 1.01, walmart: 0.98 }
@@ -114,9 +114,13 @@ function sourceLabelFor(retailerId: RetailerId) {
 
 const BASE_OBSERVATIONS: PriceObservation[] = PILOT_CLUSTERS.flatMap((cluster) =>
   STORES.filter((store) => store.zipCode === cluster.zipCode).flatMap((store) =>
-    ANCHOR_BASKET.map((item) => {
-      const base = BASE_MATRIX[store.retailerId][item.id];
-      const multiplier = ZIP_MULTIPLIERS[cluster.zipCode][store.retailerId];
+    ANCHOR_BASKET.flatMap((item) => {
+      const base = BASE_MATRIX[store.retailerId]?.[item.id];
+      const multiplier = ZIP_MULTIPLIERS[cluster.zipCode]?.[store.retailerId];
+
+      if (!base || !multiplier) {
+        return [];
+      }
 
       return {
         id: `${store.id}-${item.id}-regular`,
@@ -142,18 +146,22 @@ const BASE_OBSERVATIONS: PriceObservation[] = PILOT_CLUSTERS.flatMap((cluster) =
 );
 
 const SCENARIO_OBSERVATIONS: PriceObservation[] = PILOT_CLUSTERS.flatMap((cluster) =>
-    OVERRIDES.map((override) => {
+    OVERRIDES.flatMap((override) => {
       const store = STORES.find(
         (candidate) =>
           candidate.zipCode === cluster.zipCode && candidate.retailerId === override.retailerId
       );
 
       if (!store) {
-        throw new Error(`Missing store for ${override.retailerId} ${cluster.zipCode}`);
+        return [];
       }
 
-      const base = BASE_MATRIX[override.retailerId][override.canonicalProductId];
-      const multiplier = ZIP_MULTIPLIERS[cluster.zipCode][override.retailerId];
+      const base = BASE_MATRIX[override.retailerId]?.[override.canonicalProductId];
+      const multiplier = ZIP_MULTIPLIERS[cluster.zipCode]?.[override.retailerId];
+
+      if (!base || !multiplier) {
+        return [];
+      }
 
       return {
         id: `${store.id}-${override.canonicalProductId}-${override.priceType}`,

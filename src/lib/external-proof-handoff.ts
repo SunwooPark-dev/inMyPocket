@@ -56,6 +56,31 @@ export function getExternalProofHandoff(
     });
   }
 
+  if (releaseHealth && releaseHealth.liveSupabaseProofStatus !== "passed") {
+    items.push({
+      key: "supabase-direct-grant",
+      title: "Supabase direct-grant hardening handoff",
+      blocker:
+        `Live Supabase proof is ${releaseHealth.liveSupabaseProofStatus}; publishable-key direct reads must be denied or return zero governed rows.`,
+      requiredInputs: [
+        "Linked Supabase project or SQL Editor access",
+        "Permission to revoke anon/authenticated/public direct grants on published_price_observations"
+      ],
+      expectedOutputs: [
+        "forbidden_direct_grant_count = 0",
+        "service_role_select_grant_count = 1",
+        "pnpm smoke:local -SkipPayment passes the direct grant proof"
+      ],
+      recommendedCommandSet: [
+        "pnpm ops:harden-published-view",
+        "pnpm ops:harden-published-view:apply",
+        "pnpm smoke:local -SkipPayment",
+        "pnpm ops:evidence",
+        "pnpm ops:verify"
+      ]
+    });
+  }
+
   if (releaseHealth?.paymentStatus === "deferred") {
     items.push({
       key: "payment-proof",
