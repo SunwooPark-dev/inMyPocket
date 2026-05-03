@@ -30,6 +30,18 @@ export function getExternalBlockers(
     });
   }
 
+  if (releaseHealth && releaseHealth.liveSupabaseProofStatus !== "passed") {
+    blockers.push({
+      key: "supabase-direct-grant",
+      title: "Supabase direct-grant boundary is not passed",
+      detail:
+        `Live Supabase proof is ${releaseHealth.liveSupabaseProofStatus}. Public basket reads must stay server-side, and publishable-key direct reads must be denied or return zero governed rows.`,
+      unblockRequirement:
+        "Run pnpm ops:harden-published-view, then pnpm ops:harden-published-view:apply from a linked Supabase environment, followed by pnpm smoke:local -SkipPayment.",
+      severity: "high"
+    });
+  }
+
   if (releaseHealth?.paymentStatus === "deferred") {
     blockers.push({
       key: "payment-proof",

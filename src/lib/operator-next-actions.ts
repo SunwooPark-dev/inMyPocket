@@ -35,6 +35,17 @@ export function getOperatorNextActions(
     });
   }
 
+  if (releaseHealth.proofLevel === "failed" || releaseHealth.verdict === "red") {
+    actions.push({
+      key: "repair-local-proof",
+      title: "Repair the local operator proof lane",
+      reason:
+        "The latest canonical verification snapshot is red. Restore the local app/runtime prerequisites, then rerun the operator proof so hosted follow-up does not mask a current local failure.",
+      commands: ["pnpm dev", "pnpm ops:evidence", "pnpm ops:verify"],
+      priority: "now"
+    });
+  }
+
   if (releaseHealth.visualRegressionStatus !== "green") {
     actions.push({
       key: "refresh-visual",
@@ -42,6 +53,23 @@ export function getOperatorNextActions(
       reason: "Visual drift is not currently green.",
       commands: ["pnpm visual:check", "pnpm ops:verify"],
       priority: "next"
+    });
+  }
+
+  if (releaseHealth.liveSupabaseProofStatus !== "passed") {
+    actions.push({
+      key: "harden-published-view",
+      title: "Close Supabase direct-grant boundary",
+      reason:
+        `Live Supabase proof is ${releaseHealth.liveSupabaseProofStatus}. The active contract requires server-owned public reads and no direct publishable-key governed-row access.`,
+      commands: [
+        "pnpm ops:harden-published-view",
+        "pnpm ops:harden-published-view:apply",
+        "pnpm smoke:local -SkipPayment",
+        "pnpm ops:evidence",
+        "pnpm ops:verify"
+      ],
+      priority: "now"
     });
   }
 

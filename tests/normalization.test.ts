@@ -31,9 +31,11 @@ import {
 import { formatAdminUnlockFeedback } from "../src/lib/admin-unlock-feedback.ts";
 import { validateEvidenceFileDescriptor } from "../src/lib/admin-upload.ts";
 import { DEMO_OBSERVATIONS } from "../src/lib/demo-data.ts";
-import { buildFoundingMemberCheckoutParams } from "../src/lib/founding-member.ts";
 import { createEvidenceDownloadUrl } from "../src/lib/observation-evidence-store.ts";
-import { mergeObservations as mergeObservationFeed } from "../src/lib/observation-feed.ts";
+import {
+  getRecentStoredObservations,
+  mergeObservations as mergeObservationFeed
+} from "../src/lib/observation-feed.ts";
 import * as observationStorage from "../src/lib/observation-storage.ts";
 import { readStoredObservations } from "../src/lib/observation-repository.ts";
 import {
@@ -46,8 +48,6 @@ import {
   resolveOpsEvidencePath,
   validateOpsEvidenceContract
 } from "../src/lib/ops-evidence.ts";
-import { mergeObservations } from "../src/lib/server-storage.ts";
-import * as serverStorage from "../src/lib/server-storage.ts";
 import { isAllowedSourceUrl } from "../src/lib/source-policy.ts";
 import {
   buildWaitlistEventDetail,
@@ -59,6 +59,7 @@ import {
   getWaitlistTrustPoints,
   normalizeWaitlistMessage
 } from "../src/lib/waitlist-form-content.ts";
+import { ADMIN_OBSERVATIONS_API_PATH } from "../src/lib/api-paths.ts";
 
 test("default basket summary keeps coverage above 80 for the pilot ZIP", () => {
   const summaries = buildBasketSummary("30328", "base_regular_total");
@@ -107,7 +108,7 @@ test("mergeObservations prefers the latest stored observation for the same key",
 
   assert.ok(base);
 
-  const merged = mergeObservations(DEMO_OBSERVATIONS, [
+  const merged = mergeObservationFeed(DEMO_OBSERVATIONS, [
     {
       ...base,
       id: "stored-1",
@@ -118,7 +119,7 @@ test("mergeObservations prefers the latest stored observation for the same key",
   ]);
 
   const selected = merged.find(
-    (observation) =>
+    (observation: (typeof merged)[number]) =>
       observation.storeId === "kroger-30328" &&
       observation.canonicalProductId === "milk" &&
       observation.priceType === "regular"
@@ -129,25 +130,23 @@ test("mergeObservations prefers the latest stored observation for the same key",
   assert.equal(selected.id, "stored-1");
 });
 
-test("server-storage compatibility facade preserves the extracted API surface", () => {
-  assert.equal(typeof serverStorage.mergeObservations, "function");
-  assert.equal(typeof serverStorage.getPublicEffectiveObservations, "function");
-  assert.equal(typeof serverStorage.getRecentStoredObservations, "function");
-  assert.equal(typeof serverStorage.createEvidenceDownloadUrl, "function");
-  assert.equal(typeof serverStorage.createFoundingMemberSignup, "function");
-  assert.equal(typeof serverStorage.updateFoundingMemberSignupBySubscriptionId, "function");
-  assert.equal(typeof serverStorage.saveImportedWaitlistEntry, "function");
-});
-
 test("observation-storage facade re-exports the split observation modules", () => {
   assert.equal(observationStorage.mergeObservations, mergeObservationFeed);
+  assert.equal(observationStorage.getRecentStoredObservations, getRecentStoredObservations);
   assert.equal(observationStorage.readStoredObservations, readStoredObservations);
   assert.equal(observationStorage.createEvidenceDownloadUrl, createEvidenceDownloadUrl);
 });
 
-test("isAllowedSourceUrl accepts official domains and rejects other hosts", () => {
+test("admin observation writes use the admin namespace path", () => {
+  assert.equal(ADMIN_OBSERVATIONS_API_PATH, "/api/admin/observations");
+});
+
+test("isAllowedSourceUrl accepts active official domains and rejects retired or unsafe hosts", () => {
   assert.equal(isAllowedSourceUrl("kroger", "https://www.kroger.com/p/banana"), true);
   assert.equal(isAllowedSourceUrl("aldi", "https://shop.aldi.us/store/aldi"), true);
+  assert.equal(isAllowedSourceUrl("walmart", "https://www.walmart.com/ip/item"), true);
+  assert.equal(isAllowedSourceUrl("fredmeyer" as never, "https://www.fredmeyer.com/p/milk"), false);
+  assert.equal(isAllowedSourceUrl("albertsons" as never, "https://www.albertsons.com/shop/product-details.123.html"), false);
   assert.equal(isAllowedSourceUrl("walmart", "https://evil.example.com/walmart"), false);
   assert.equal(isAllowedSourceUrl("walmart", "http://www.walmart.com/ip/item"), false);
 });
@@ -298,6 +297,39 @@ test("external proof handoff still exposes hosted required inputs and expected o
   assert.equal((handoff[0]?.expectedOutputs.length ?? 0) > 0, true);
 });
 
+test("operator handoff prioritizes Supabase direct-grant hardening when live proof is not passed", () => {
+  const releaseHealth = {
+    verifiedAt: "2026-04-16T09:47:28.054Z",
+    formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
+    verdict: "green" as const,
+    proofLevel: "full" as const,
+    verificationScope: "local-simulated" as const,
+    proofLabel: "full (local-simulated)",
+    freshnessStatus: "current" as const,
+    staleReasons: [],
+    hostedObservationStatus: "local-simulation" as const,
+    visualRegressionStatus: "green" as const,
+    bundleName: "ops-evidence-20260415-185147",
+    operationsProofStatus: "materially complete",
+    paymentStatus: "not_planned",
+    liveSupabaseProofStatus: "failed",
+    errors: []
+  };
+  const actions = getOperatorNextActions(releaseHealth);
+  const blockers = getExternalBlockers(releaseHealth);
+  const handoff = getExternalProofHandoff(releaseHealth);
+
+  assert.equal(actions.some((action) => action.key === "harden-published-view"), true);
+  assert.equal(blockers.some((blocker) => blocker.key === "supabase-direct-grant"), true);
+  assert.equal(handoff.some((item) => item.key === "supabase-direct-grant"), true);
+  assert.equal(
+    actions
+      .find((action) => action.key === "harden-published-view")
+      ?.commands.includes("pnpm ops:harden-published-view:apply"),
+    true
+  );
+});
+
 test("validateEvidenceFileDescriptor enforces type and size rules", () => {
   assert.equal(
     validateEvidenceFileDescriptor({ type: "image/png", size: 1024 }),
@@ -313,31 +345,6 @@ test("validateEvidenceFileDescriptor enforces type and size rules", () => {
   );
 });
 
-test("buildFoundingMemberCheckoutParams produces subscription checkout metadata", () => {
-  const params = buildFoundingMemberCheckoutParams({
-    signup: {
-      id: "signup-1",
-      email: "member@example.com",
-      zipCode: "30328",
-      planCode: "founding-member",
-      status: "pending_checkout",
-      stripeCustomerId: null,
-      stripeCheckoutSessionId: null,
-      stripeSubscriptionId: null,
-      createdAt: "2026-04-13T01:00:00.000Z",
-      updatedAt: "2026-04-13T01:00:00.000Z"
-    },
-    priceId: "price_123",
-    appUrl: "https://example.com"
-  });
-
-  assert.equal(params.mode, "subscription");
-  assert.equal(params.client_reference_id, "signup-1");
-  assert.equal(params.customer_email, "member@example.com");
-  assert.equal(params.line_items?.[0]?.price, "price_123");
-  assert.equal(params.metadata?.signup_id, "signup-1");
-  assert.equal(params.subscription_data?.metadata?.zip_code, "30328");
-});
 
 test("admin session cookie can be created and verified", async () => {
   process.env.ADMIN_ACCESS_TOKEN = "test-admin-token";
