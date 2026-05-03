@@ -81,23 +81,5 @@ export function getExternalProofHandoff(
     });
   }
 
-  if (releaseHealth?.paymentStatus === "deferred") {
-    items.push({
-      key: "payment-proof",
-      title: "Payment proof handoff",
-      blocker: "Stripe proof remains outside the current merge gate.",
-      requiredInputs: [
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET",
-        "STRIPE_PRICE_ID_FOUNDING_MEMBER"
-      ],
-      expectedOutputs: [
-        "Checkout start proof",
-        "Webhook receipt proof",
-        "Signup reconciliation proof"
-      ]
-    });
-  }
-
   return items;
 }
