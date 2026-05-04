@@ -25,11 +25,7 @@ if (-not (Test-Path $envLocalPath)) {
 
 $requiredKeys = @(
   "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_PRICE_ID_FOUNDING_MEMBER",
   "APP_URL",
   "ADMIN_ACCESS_TOKEN",
   "ADMIN_SESSION_SECRET"
@@ -70,21 +66,7 @@ try {
   $supabaseReady = $true
 } catch {}
 
-$stripeReady = $false
-$stripeSource = "missing"
-if (Test-Path $localStripePath) {
-  $stripeReady = $true
-  $stripeSource = ".tools\\stripe-cli\\stripe.exe"
-} else {
-  $globalStripe = Get-Command "stripe" -ErrorAction SilentlyContinue
-  if ($globalStripe) {
-    $stripeReady = $true
-    $stripeSource = $globalStripe.Source
-  }
-}
-
 Write-Host "  - supabase : $(if ($supabaseReady) { 'READY (pnpm dlx supabase@latest)' } else { 'MISSING' })" -ForegroundColor $(if ($supabaseReady) { 'Green' } else { 'Red' })
-Write-Host "  - stripe   : $(if ($stripeReady) { "READY ($stripeSource)" } else { 'MISSING' })" -ForegroundColor $(if ($stripeReady) { 'Green' } else { 'Red' })
 
 Write-Host ""
 Write-Host "Correct commands for this repo" -ForegroundColor Yellow
@@ -92,23 +74,23 @@ Write-Host "  1. .\\scripts\\supabase-cli.ps1 login"
 Write-Host "  2. .\\scripts\\supabase-cli.ps1 init    # only if supabase/config.toml is still missing"
 Write-Host "  3. .\\scripts\\supabase-cli.ps1 link --project-ref <YOUR_SUPABASE_PROJECT_ID>"
 Write-Host "  4. .\\scripts\\supabase-cli.ps1 db push"
-Write-Host "  5. .\\scripts\\stripe-cli.ps1 login"
-Write-Host "  6. .\\scripts\\stripe-cli.ps1 listen --forward-to localhost:3000/api/stripe/webhook"
+Write-Host "  5. pnpm ops:harden-published-view    # dry-run direct-grant hardening instructions"
+Write-Host "  6. pnpm ops:harden-published-view:apply    # only after linking the intended Supabase project"
 Write-Host "  7. pnpm dev"
 Write-Host "  8. pnpm port:check    # shows whether 3000 is already occupied"
 Write-Host "  9. pnpm start:3001   # alternate port when 3000 is busy"
 Write-Host " 10. pnpm dev:3001     # alternate dev port (best in a normal terminal)"
 
 Write-Host ""
-Write-Host "Important route correction" -ForegroundColor Yellow
-Write-Host "  - Webhook path is /api/stripe/webhook"
-Write-Host "  - It is not /api/webhooks/stripe"
+Write-Host "Current runtime model" -ForegroundColor Yellow
+Write-Host "  - Direct payment is not part of the active product model"
+Write-Host "  - Weekly updates stay on /api/waitlist"
 
 if ($ShowOnly) {
   exit 0
 }
 
-if ($missing.Count -gt 0 -or -not $supabaseReady -or -not $stripeReady) {
+if ($missing.Count -gt 0 -or -not $supabaseReady) {
   Write-Host ""
   Write-Host "Bootstrap finished. Fill .env.local and install missing CLIs before live smoke." -ForegroundColor Cyan
   exit 0

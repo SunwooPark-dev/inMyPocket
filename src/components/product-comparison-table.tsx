@@ -1,10 +1,19 @@
 import { RETAILERS } from "../lib/catalog";
-import { ItemComparisonRow } from "../lib/domain";
+import type { ItemComparisonRow, RetailerId } from "../lib/domain";
+import {
+  SOURCE_QUALITY_GUIDE_ORDER,
+  SOURCE_QUALITY_METADATA,
+  sourceLinkLabel,
+  sourceQualityClassName,
+  sourceQualityLabel
+} from "../lib/source-quality";
+import { isAllowedSourceUrl } from "../lib/source-policy";
 
 type ProductComparisonTableProps = {
   rows: ItemComparisonRow[];
   exactMatches: number;
   estimatedMatches: number;
+  retailerIds: RetailerId[];
 };
 
 function unitLabel(unit: string) {
@@ -36,9 +45,11 @@ function gradeLabel(grade: string) {
 export function ProductComparisonTable({
   rows,
   exactMatches,
-  estimatedMatches
+  estimatedMatches,
+  retailerIds
 }: ProductComparisonTableProps) {
   const totalItems = rows.length;
+  const activeRetailers = RETAILERS.filter((retailer) => retailerIds.includes(retailer.id));
 
   return (
     <div className="comparison-list">
@@ -50,6 +61,21 @@ export function ProductComparisonTable({
             : ""}
         </p>
       </div>
+      <div className="source-quality-guide" aria-label="Source quality guide">
+        <p className="source-quality-guide__title">Source quality guide</p>
+        <div className="source-quality-guide__list">
+          {SOURCE_QUALITY_GUIDE_ORDER.map((qualityKey) => {
+            const metadata = SOURCE_QUALITY_METADATA[qualityKey];
+
+            return (
+              <div key={qualityKey} className="source-quality-guide__item">
+                <span className={metadata.className}>{metadata.guideLabel}</span>
+                <span>{metadata.guideDescription}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {rows.map((row) => (
         <article key={row.item.id} className="comparison-row">
@@ -60,8 +86,11 @@ export function ProductComparisonTable({
           </div>
 
           <div className="comparison-row__grid">
-            {RETAILERS.map((retailer) => {
+            {activeRetailers.map((retailer) => {
               const price = row.pricesByRetailer[retailer.id];
+              const hasSafeSourceLink = price
+                ? isAllowedSourceUrl(retailer.id, price.observation.sourceUrl)
+                : false;
 
               return (
                 <div key={retailer.id} className="comparison-cell">
@@ -86,6 +115,23 @@ export function ProductComparisonTable({
                         {priceTypeLabel(price.observation.priceType)} ·{" "}
                         {gradeLabel(price.observation.comparabilityGrade)}
                       </p>
+                      <p className={sourceQualityClassName(price.observation.sourceQuality)}>
+                        {sourceQualityLabel(price.observation.sourceQuality)}
+                      </p>
+                      {hasSafeSourceLink ? (
+                        <a
+                          className="comparison-source-link"
+                          href={price.observation.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {sourceLinkLabel(price.observation.sourceQuality)}
+                        </a>
+                      ) : (
+                        <p className="comparison-source-link comparison-source-link--unavailable">
+                          Official source unavailable
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>

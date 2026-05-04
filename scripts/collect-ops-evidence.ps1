@@ -87,9 +87,11 @@ function Invoke-StepResult {
   )
 
   try {
+    $global:LASTEXITCODE = 0
+    $output = (& $Script 2>&1 | Out-String).Trim()
     return [pscustomobject]@{
-      Succeeded = $true
-      Output = (& $Script 2>&1 | Out-String).Trim()
+      Succeeded = $? -and ($LASTEXITCODE -eq 0)
+      Output = $output
     }
   } catch {
     $lines = @()
@@ -174,6 +176,98 @@ function Get-SupabaseProofSucceeded {
   return $true
 }
 
+function Get-SupabaseNoGrantProofSucceeded {
+  param(
+    [pscustomobject]$QueryResult,
+    [string[]]$DeniedGrantees
+  )
+
+  if (-not $QueryResult.Succeeded) {
+    return $false
+  }
+
+  try {
+    $normalizedOutput = $QueryResult.Output.Trim()
+    $jsonMatch = [regex]::Match($normalizedOutput, '(?s)(\{.*\}|\[.*\])\s*$')
+    if ($jsonMatch.Success) {
+      $normalizedOutput = $jsonMatch.Groups[1].Value
+    }
+    $payload = $normalizedOutput | ConvertFrom-Json
+  } catch {
+    return $false
+  }
+
+  if ($null -ne $payload.rows) {
+    $rows = @($payload.rows)
+  } else {
+    $rows = @($payload)
+  }
+
+  foreach ($row in $rows) {
+    if ($DeniedGrantees -contains $row.grantee) {
+      return $false
+    }
+  }
+
+  return $true
+}
+
+function Test-SupabaseMissingLinkError {
+  param(
+    [pscustomobject[]]$QueryResults
+  )
+
+  foreach ($result in $QueryResults) {
+    if (
+      $null -ne $result -and (
+        $result.Output -match "Cannot find project ref" -or
+        $result.Output -match "Have you run supabase link\?"
+      )
+    ) {
+      return $true
+    }
+  }
+
+  return $false
+}
+
+function Format-SupabaseReportOutput {
+  param(
+    [pscustomobject]$QueryResult
+  )
+
+  if ($QueryResult.Succeeded) {
+    return "Supabase query completed. Raw query output is suppressed in this report."
+  }
+
+  if (
+    $QueryResult.Output -match "Cannot find project ref" -or
+    $QueryResult.Output -match "Have you run supabase link\?"
+  ) {
+    return "Supabase project is not linked in this environment."
+  }
+
+  return "Supabase query did not complete. Raw CLI output is suppressed in this report."
+}
+
+function Format-ReportOutput {
+  param(
+    [string]$Output
+  )
+
+  if ([string]::IsNullOrWhiteSpace($Output)) {
+    return "(no output)"
+  }
+
+  $safeOutput = $Output
+  $safeOutput = $safeOutput -replace [regex]::Escape($projectRoot), "<project-root>"
+  $safeOutput = $safeOutput -replace "(?m)^Try rerunning the command with --debug to troubleshoot the error\.\r?\n?", ""
+  $safeOutput = $safeOutput -replace "(?m)^.*Authorization:\s*Bearer\s+.*\r?\n?", "[redacted authorization header]`n"
+  $safeOutput = $safeOutput -replace "(?m)^.*apikey:\s*.*\r?\n?", "[redacted apikey header]`n"
+
+  return $safeOutput.Trim()
+}
+
 function Invoke-UiEvidenceCapture {
   param(
     [string]$BaseUrl,
@@ -217,73 +311,9 @@ function Get-UiEvidenceStatus {
   return "failed"
 }
 
-function Get-RestProof {
-  param(
-    [hashtable]$EnvMap
-  )
-
-  $url = $EnvMap["NEXT_PUBLIC_SUPABASE_URL"]
-  $key = $EnvMap["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]
-
-  if ([string]::IsNullOrWhiteSpace($url) -or [string]::IsNullOrWhiteSpace($key)) {
-    return [pscustomobject]@{
-      Succeeded = $false
-      Output = "Supabase public REST proof skipped because NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing."
-    }
-  }
-
-  $publishedStatus = ""
-  $publishedBody = ""
-  $baseTableStatus = ""
-  $baseTableBody = ""
-
-  try {
-    $published = Invoke-WebRequest -UseBasicParsing -Uri "$url/rest/v1/published_price_observations?select=id&limit=1" -Headers @{
-      apikey = $key
-      Authorization = "Bearer $key"
-    }
-    $publishedStatus = $published.StatusCode
-    $publishedBody = $published.Content
-  } catch {
-    $publishedStatus = "ERROR"
-    $publishedBody = $_.Exception.Message
-  }
-
-  try {
-    Invoke-WebRequest -UseBasicParsing -Uri "$url/rest/v1/price_observations?select=id&limit=1" -Headers @{
-      apikey = $key
-      Authorization = "Bearer $key"
-    } | Out-Null
-    $baseTableStatus = "200"
-    $baseTableBody = "Unexpected success"
-  } catch {
-    if ($_.Exception.Response) {
-      $baseTableStatus = $_.Exception.Response.StatusCode.value__
-      $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-      $baseTableBody = $reader.ReadToEnd()
-    } else {
-      $baseTableStatus = "ERROR"
-      $baseTableBody = $_.Exception.Message
-    }
-  }
-
-  $output = @"
-Published view status: $publishedStatus
-Published view body: $publishedBody
-Base table status: $baseTableStatus
-Base table body: $baseTableBody
-"@.Trim()
-
-  return [pscustomobject]@{
-    Succeeded = ($publishedStatus -eq 200 -and $baseTableStatus -eq 401)
-    Output = $output
-  }
-}
-
 $envMap = Read-EnvMap
 $requiredNowKeys = @(
   "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "APP_URL",
   "ADMIN_ACCESS_TOKEN",
@@ -346,30 +376,42 @@ $smokeResult = Invoke-StepResult {
 
 $publicPolicies = Invoke-SupabaseQuery "select tablename, policyname, cmd, roles from pg_policies where schemaname = 'public' and tablename in ('price_observations','observation_evidence','founding_member_signups') order by tablename, policyname;"
 $publishedView = Invoke-SupabaseQuery "select table_name from information_schema.views where table_schema = 'public' and table_name = 'published_price_observations';"
+$publishedViewGrants = Invoke-SupabaseQuery "select grantee, privilege_type from information_schema.role_table_grants where table_schema = 'public' and table_name = 'published_price_observations' order by grantee, privilege_type;"
 $evidenceBucket = Invoke-SupabaseQuery "select id, name, public from storage.buckets where id = 'observation-evidence';"
 $storagePolicies = Invoke-SupabaseQuery "select policyname, cmd, roles from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'deny anon authenticated observation evidence bucket';"
-$restProof = Get-RestProof -EnvMap $envMap
 $uiEvidenceResult = Invoke-UiEvidenceCapture -BaseUrl $BaseUrl -OutputDir $uiEvidenceDir
 $uiEvidenceStatus = Get-UiEvidenceStatus -UiEvidenceResult $uiEvidenceResult
 
 $paymentReady = ($paymentKeys | Where-Object { [string]::IsNullOrWhiteSpace($envMap[$_]) }).Count -eq 0
-$liveSupabaseProofAvailable =
+$liveSupabaseProofRequested =
   -not [string]::IsNullOrWhiteSpace($envMap["NEXT_PUBLIC_SUPABASE_URL"]) -and
-  -not [string]::IsNullOrWhiteSpace($envMap["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]) -and
   -not [string]::IsNullOrWhiteSpace($envMap["SUPABASE_SERVICE_ROLE_KEY"])
+# Hosted runners can expose Supabase env vars without having a linked project.
+# Treat that specific missing-link class as unavailable, not as a proof failure.
+$supabaseLinkedProjectUnavailable = Test-SupabaseMissingLinkError -QueryResults @(
+  $publicPolicies,
+  $publishedView,
+  $publishedViewGrants,
+  $evidenceBucket,
+  $storagePolicies
+)
+$liveSupabaseProofAvailable = $liveSupabaseProofRequested -and -not $supabaseLinkedProjectUnavailable
 $publicPoliciesSucceeded = Get-SupabaseProofSucceeded -QueryResult $publicPolicies -MinimumRows 3
 $publishedViewSucceeded = Get-SupabaseProofSucceeded -QueryResult $publishedView -MinimumRows 1 -ExpectedField "table_name" -ExpectedValue "published_price_observations"
+$publishedViewGrantsSucceeded = Get-SupabaseNoGrantProofSucceeded -QueryResult $publishedViewGrants -DeniedGrantees @("anon", "authenticated", "public")
 $evidenceBucketSucceeded = Get-SupabaseProofSucceeded -QueryResult $evidenceBucket -MinimumRows 1 -ExpectedField "public" -ExpectedValue $false
 $storagePoliciesSucceeded = Get-SupabaseProofSucceeded -QueryResult $storagePolicies -MinimumRows 1 -ExpectedField "policyname" -ExpectedValue "deny anon authenticated observation evidence bucket"
 $liveSupabaseProofPassed =
   $liveSupabaseProofAvailable -and
   $publicPoliciesSucceeded -and
   $publishedViewSucceeded -and
+  $publishedViewGrantsSucceeded -and
   $evidenceBucketSucceeded -and
-  $storagePoliciesSucceeded -and
-  $restProof.Succeeded
+  $storagePoliciesSucceeded
 $paymentStatus = "Direct payment is not part of the current product model. Donation and advertising support are being considered instead."
-$liveSupabaseProofStatus = if (-not $liveSupabaseProofAvailable) {
+$liveSupabaseProofStatus = if (-not $liveSupabaseProofRequested) {
+  "unavailable in this environment"
+} elseif ($supabaseLinkedProjectUnavailable) {
   "unavailable in this environment"
 } elseif ($liveSupabaseProofPassed) {
   "passed"
@@ -404,10 +446,10 @@ Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz")
 
 ## Bundle paths
 
-- Bundle directory: $BundleDir
-- Report path: $OutputPath
-- UI assets directory: $uiEvidenceDir
-- Bundle manifest: $bundleManifestPath
+- Bundle directory: $bundleDirContractPath
+- Report path: $reportPathContractPath
+- UI assets directory: $uiAssetsDirContractPath
+- Bundle manifest: $manifestPathContractPath
 
 ## Verification status
 
@@ -428,56 +470,56 @@ $(Get-KeyStatus -EnvMap $envMap -Keys $paymentKeys)
 
 ~~~text
 STATUS: $uiEvidenceStatus
-$($uiEvidenceResult.Output)
+$(Format-ReportOutput -Output $uiEvidenceResult.Output)
 ~~~
 
 ## Bootstrap output
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $bootstrapResult.Succeeded)
-$($bootstrapResult.Output)
+$(Format-ReportOutput -Output $bootstrapResult.Output)
 ~~~
 
 ## Local smoke output
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $smokeResult.Succeeded)
-$($smokeResult.Output)
+$(Format-ReportOutput -Output $smokeResult.Output)
 ~~~
 
 ## Public table policy proof
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $publicPoliciesSucceeded)
-$($publicPolicies.Output)
+$(Format-SupabaseReportOutput -QueryResult $publicPolicies)
 ~~~
 
 ## Published view existence
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $publishedViewSucceeded)
-$($publishedView.Output)
+$(Format-SupabaseReportOutput -QueryResult $publishedView)
+~~~
+
+## Published view grant proof
+
+~~~text
+STATUS: $(Get-StepStatusLabel -Succeeded $publishedViewGrantsSucceeded)
+$(Format-SupabaseReportOutput -QueryResult $publishedViewGrants)
 ~~~
 
 ## Evidence bucket proof
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $evidenceBucketSucceeded)
-$($evidenceBucket.Output)
+$(Format-SupabaseReportOutput -QueryResult $evidenceBucket)
 ~~~
 
 ## Storage policy proof
 
 ~~~text
 STATUS: $(Get-StepStatusLabel -Succeeded $storagePoliciesSucceeded)
-$($storagePolicies.Output)
-~~~
-
-## REST trust-boundary proof
-
-~~~text
-STATUS: $(Get-StepStatusLabel -Succeeded $restProof.Succeeded)
-$($restProof.Output)
+$(Format-SupabaseReportOutput -QueryResult $storagePolicies)
 ~~~
 
 ## Payment status
@@ -491,10 +533,10 @@ $latestMarker = @"
 # Latest Operations Evidence Bundle
 
 - Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss zzz")
-- Bundle directory: $BundleDir
-- Report path: $OutputPath
-- UI assets directory: $uiEvidenceDir
-- Bundle manifest: $bundleManifestPath
+- Bundle directory: $bundleDirContractPath
+- Report path: $reportPathContractPath
+- UI assets directory: $uiAssetsDirContractPath
+- Bundle manifest: $manifestPathContractPath
 - Bootstrap capture: $(Get-StepStatusLabel -Succeeded $bootstrapResult.Succeeded)
 - UI evidence capture: $uiEvidenceStatus
 - Local smoke: $(Get-StepStatusLabel -Succeeded $smokeResult.Succeeded)

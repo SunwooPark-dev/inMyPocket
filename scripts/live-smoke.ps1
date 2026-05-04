@@ -9,6 +9,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $envLocalPath = Join-Path $projectRoot ".env.local"
 $cookieJarPath = Join-Path $projectRoot ".smoke.cookies.txt"
 $evidencePath = Join-Path $projectRoot "tests\\fixtures\\smoke-evidence.pdf"
+$adminObservationsApiPath = "$BaseUrl/api/admin/observations"
 
 function Write-Step($message) {
   Write-Host ""
@@ -95,33 +96,64 @@ $adminReady =
   -not [string]::IsNullOrWhiteSpace($envMap["ADMIN_SESSION_SECRET"])
 $supabaseReady =
   -not [string]::IsNullOrWhiteSpace($envMap["NEXT_PUBLIC_SUPABASE_URL"]) -and
-  -not [string]::IsNullOrWhiteSpace($envMap["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]) -and
   -not [string]::IsNullOrWhiteSpace($envMap["SUPABASE_SERVICE_ROLE_KEY"])
+$publishableKeyReady = -not [string]::IsNullOrWhiteSpace($envMap["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"])
 $stripeReady =
   -not [string]::IsNullOrWhiteSpace($envMap["STRIPE_SECRET_KEY"]) -and
   -not [string]::IsNullOrWhiteSpace($envMap["STRIPE_WEBHOOK_SECRET"]) -and
   -not [string]::IsNullOrWhiteSpace($envMap["STRIPE_PRICE_ID_FOUNDING_MEMBER"])
 
 Write-Step "Public pages"
+$defaultHomeUrl = "$BaseUrl/?zip=30328&scenario=base_regular_total"
+$defaultPrintableUrl = "$BaseUrl/printable?zip=30328&scenario=base_regular_total"
 $homeResponse = $null
 try {
-  $homeResponse = Invoke-WebRequest -Uri "$BaseUrl/" -UseBasicParsing
+  $homeResponse = Invoke-WebRequest -Uri $defaultHomeUrl -UseBasicParsing
 } catch {
   Write-Host "FAIL  Could not reach $BaseUrl. Start the app with 'pnpm dev', 'pnpm dev:3001', or 'pnpm start:3001' before running local smoke." -ForegroundColor Red
   exit 1
 }
-Assert-HttpStatus $homeResponse 200 "GET /"
+Assert-HttpStatus $homeResponse 200 "GET /?zip=30328"
 Assert-Contains $homeResponse.Content "Checking today.{1,2}s prices and comparing the same basket across nearby stores\." "GET / streamed loading shell copy"
 Assert-Contains $homeResponse.Content "Enter ZIP code" "homepage shows ZIP input"
-$printable = Invoke-WebRequest -Uri "$BaseUrl/printable" -UseBasicParsing
-Assert-HttpStatus $printable 200 "GET /printable"
-Assert-Contains $printable.Content "Preparing your grocery plan" "GET /printable streamed loading shell headline"
+Assert-Contains $homeResponse.Content "Today(?:&apos;|')s lowest total" "homepage renders a real decision card for 30328"
+Assert-Contains $homeResponse.Content "Keep this basket answer each week" "homepage renders weekly updates section"
+Assert-NotContains $homeResponse.Content "We couldn(?:&apos;|')t compare this basket right now" "homepage avoids generic comparison failure for 30328"
+$printable = Invoke-WebRequest -Uri $defaultPrintableUrl -UseBasicParsing
+Assert-HttpStatus $printable 200 "GET /printable?zip=30328"
+Assert-Contains $printable.Content "Preparing today(?:&apos;|')s printable grocery plan" "GET /printable streamed loading shell headline"
+Assert-Contains $printable.Content "Shop here today:" "printable renders real basket summary for 30328"
+Assert-NotContains $printable.Content "Printable basket unavailable for now." "printable avoids empty-state fallback for 30328"
 $couponScenario = Invoke-WebRequest -Uri "$BaseUrl/?zip=30328&scenario=coupon_required_total" -UseBasicParsing
 Assert-HttpStatus $couponScenario 200 "GET /?scenario=coupon_required_total"
 Assert-Contains $couponScenario.Content "Checking today.{1,2}s prices and comparing the same basket across nearby stores\." "GET /?scenario=coupon_required_total streamed loading shell copy"
 $weeklyAdPrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=30328&scenario=weekly_ad_partial_total" -UseBasicParsing
 Assert-HttpStatus $weeklyAdPrintable 200 "GET /printable?scenario=weekly_ad_partial_total"
-Assert-Contains $weeklyAdPrintable.Content "Preparing your grocery plan" "GET /printable?scenario=weekly_ad_partial_total streamed loading shell headline"
+Assert-Contains $weeklyAdPrintable.Content "Preparing today(?:&apos;|')s printable grocery plan" "GET /printable?scenario=weekly_ad_partial_total streamed loading shell headline"
+$eugeneHome = Invoke-WebRequest -Uri "$BaseUrl/?zip=97401&scenario=base_regular_total" -UseBasicParsing
+Assert-HttpStatus $eugeneHome 200 "GET /?zip=97401"
+Assert-Contains $eugeneHome.Content "Eugene Core" "Eugene homepage shows 97401 pilot area"
+Assert-Contains $eugeneHome.Content "Today(?:&apos;|')s lowest total" "Eugene homepage renders full comparison state"
+Assert-Contains $eugeneHome.Content "Walmart" "Eugene homepage includes Walmart verified basket"
+Assert-Contains $eugeneHome.Content "item-page checks" "Eugene homepage shows source-quality summary"
+Assert-Contains $eugeneHome.Content "broader official checks" "Eugene homepage flags broader source checks"
+Assert-Contains $eugeneHome.Content "Source quality guide" "Eugene homepage explains source-quality labels"
+Assert-Contains $eugeneHome.Content "Exact item page" "Eugene homepage source guide explains exact item pages"
+Assert-Contains $eugeneHome.Content "Type not verified" "Eugene homepage source guide includes conservative fallback"
+Assert-Contains $eugeneHome.Content "Open official source" "Eugene homepage exposes official source links"
+Assert-Contains $eugeneHome.Content "rel=""noopener noreferrer""" "official source links use safe rel attributes"
+$eugenePrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=97401&scenario=base_regular_total" -UseBasicParsing
+Assert-HttpStatus $eugenePrintable 200 "GET /printable?zip=97401"
+Assert-Contains $eugenePrintable.Content "Shop here today:" "Eugene printable renders full basket summary"
+Assert-Contains $eugenePrintable.Content "Walmart" "Eugene printable includes Walmart verified basket"
+Assert-Contains $eugenePrintable.Content "Source check:" "Eugene printable includes source-quality notes"
+Assert-Contains $eugenePrintable.Content "Exact item page" "Eugene printable includes exact item source notes"
+Assert-Contains $eugenePrintable.Content "Broader official page" "Eugene printable includes broader source notes"
+Assert-Contains $eugenePrintable.Content "Search result - needs item-page check" "Eugene printable flags search-result source notes"
+Assert-NotContains $eugenePrintable.Content "Printable basket unavailable for now." "Eugene printable avoids empty-state fallback"
+$unsupportedZip = Invoke-WebRequest -Uri "$BaseUrl/?zip=99999&scenario=base_regular_total" -UseBasicParsing
+Assert-HttpStatus $unsupportedZip 200 "GET /?zip=99999"
+Assert-Contains $unsupportedZip.Content "We don’t support 99999 yet" "unsupported ZIP shows pilot-only message"
 
 Write-Step "Weekly updates route"
 try {
@@ -151,14 +183,14 @@ Assert-NotContains $admin.Content "Runtime readiness" "locked admin hides readin
 Assert-NotContains $admin.Content "NEXT_PUBLIC_SUPABASE_URL" "locked admin hides env readiness list"
 
 try {
-  Invoke-WebRequest -Uri "$BaseUrl/api/observations" -UseBasicParsing | Out-Null
-  throw "GET /api/observations should not succeed without admin auth"
+  Invoke-WebRequest -Uri $adminObservationsApiPath -UseBasicParsing | Out-Null
+  throw "GET /api/admin/observations should not succeed without admin auth"
 } catch {
   $response = $_.Exception.Response
   if (-not $response -or $response.StatusCode.value__ -ne 401) {
-    throw "GET /api/observations expected 401 without admin auth"
+    throw "GET /api/admin/observations expected 401 without admin auth"
   }
-  Write-Host "PASS  unauthenticated observations route is blocked" -ForegroundColor Green
+  Write-Host "PASS  unauthenticated admin observations route is blocked" -ForegroundColor Green
 }
 
 Write-Step "Admin unlock throttling"
@@ -223,12 +255,12 @@ if ($adminReady) {
   Assert-Contains $adminAuthed.Content "Recent unlock incidents" "unlocked admin shows recent unlock incidents"
   Assert-Contains $adminAuthed.Content "Accepted local limits" "unlocked admin shows accepted local limits"
 
-  $observationsResponse = Invoke-WebRequest -Uri "$BaseUrl/api/observations" -WebSession $session -UseBasicParsing
-  $observationsPayload = ConvertFrom-JsonSafe $observationsResponse.Content "GET /api/observations"
+  $observationsResponse = Invoke-WebRequest -Uri $adminObservationsApiPath -WebSession $session -UseBasicParsing
+  $observationsPayload = ConvertFrom-JsonSafe $observationsResponse.Content "GET /api/admin/observations"
   if (-not $observationsPayload) {
-    throw "authenticated observations route returned empty payload"
+    throw "authenticated admin observations route returned empty payload"
   }
-  Write-Host "PASS  authenticated observations route reachable" -ForegroundColor Green
+  Write-Host "PASS  authenticated admin observations route reachable" -ForegroundColor Green
 
   if ($supabaseReady) {
     Write-Step "Admin observation save with evidence"
@@ -256,14 +288,13 @@ if ($adminReady) {
         "-F", "collectedAt=$timestamp",
         "-F", "notes=$note",
         "-F", "evidence=@$evidencePath;type=application/pdf",
-        "$BaseUrl/api/observations"
+        $adminObservationsApiPath
       )
       $saveCode = & curl.exe @saveArgs
       if ($saveCode -ne "200") {
-        $saveError = if (Test-Path $saveResponsePath) { Get-Content $saveResponsePath -Raw } else { "" }
-        throw "POST /api/observations expected 200 but got $saveCode. $saveError"
+        throw "POST /api/admin/observations expected 200 but got $saveCode. Raw REST response body suppressed."
       }
-      $savedPayload = ConvertFrom-JsonSafe (Get-Content $saveResponsePath -Raw) "POST /api/observations"
+      $savedPayload = ConvertFrom-JsonSafe (Get-Content $saveResponsePath -Raw) "POST /api/admin/observations"
       Write-Host "PASS  admin observation save -> 200" -ForegroundColor Green
 
       $savedObservation = $savedPayload.observation
@@ -274,8 +305,8 @@ if ($adminReady) {
         throw "Saved observation payload missing evidenceId"
       }
 
-      $recentResponse = Invoke-WebRequest -Uri "$BaseUrl/api/observations" -WebSession $session -UseBasicParsing
-      $recentPayload = ConvertFrom-JsonSafe $recentResponse.Content "GET /api/observations after save"
+      $recentResponse = Invoke-WebRequest -Uri $adminObservationsApiPath -WebSession $session -UseBasicParsing
+      $recentPayload = ConvertFrom-JsonSafe $recentResponse.Content "GET /api/admin/observations after save"
       $matched = $recentPayload.observations | Where-Object { $_.id -eq $savedObservation.id }
       if (-not $matched) {
         throw "Saved observation not found in recent observations"
@@ -294,19 +325,33 @@ if ($adminReady) {
       }
       Write-Host "PASS  unauthenticated evidence route is blocked" -ForegroundColor Green
 
-      Write-Step "Public Supabase view proof"
-      $publicRows = curl.exe -s `
-        "$($envMap['NEXT_PUBLIC_SUPABASE_URL'])/rest/v1/published_price_observations?select=id,store_id,canonical_product_id,price_type,source_url,collected_at,published_at&store_id=eq.kroger-30328&price_type=eq.regular&limit=25" `
-        -H "apikey: $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])" `
-        -H "Authorization: Bearer $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])"
-      if ($publicRows -match '"message"') {
-        throw "Public Supabase view query returned an error: $publicRows"
+      Write-Step "Direct Supabase grant proof"
+      $publicPayload = @()
+      if ($publishableKeyReady) {
+        $publicRestResult = curl.exe -s -w "`n%{http_code}" `
+          "$($envMap['NEXT_PUBLIC_SUPABASE_URL'])/rest/v1/published_price_observations?select=id,store_id,canonical_product_id,price_type,source_url,collected_at,published_at&store_id=eq.kroger-30328&price_type=eq.regular&limit=25" `
+          -H "apikey: $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])" `
+          -H "Authorization: Bearer $($envMap['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'])"
+        $publicRestLines = @($publicRestResult)
+        $publicRestStatus = [int]($publicRestLines[-1])
+        $publicRows = ($publicRestLines | Select-Object -SkipLast 1) -join "`n"
+
+        if ($publicRestStatus -eq 401 -or $publicRestStatus -eq 403) {
+          Write-Host "PASS  direct publishable-key REST access to published_price_observations is denied" -ForegroundColor Green
+        } elseif ($publicRestStatus -ge 400) {
+          throw "Direct publishable-key grant query returned HTTP $publicRestStatus. Raw REST response body suppressed."
+        } else {
+          $publicPayload = ConvertFrom-JsonSafe $publicRows "published_price_observations query"
+        }
       }
-      $publicPayload = ConvertFrom-JsonSafe $publicRows "published_price_observations query"
-      if (-not $publicPayload -or $publicPayload.Count -lt 1) {
-        throw "published_price_observations did not return governed published rows"
+
+      if (-not $publishableKeyReady) {
+        Write-Host "SKIP  publishable-key REST surface check skipped because NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not set" -ForegroundColor Yellow
+      } elseif (-not $publicPayload -or $publicPayload.Count -lt 1) {
+        Write-Host "PASS  public REST surface does not expose governed rows; public basket reads stay server-side" -ForegroundColor Green
+      } else {
+        throw "Direct publishable-key REST returned governed rows; remove anon/authenticated/public grants and keep public basket reads server-side."
       }
-      Write-Host "PASS  public view still exposes governed published rows" -ForegroundColor Green
 
       $savedCollectedAt = [DateTimeOffset]::Parse($savedObservation.collectedAt).UtcDateTime
       $leakedPublicRows = @(

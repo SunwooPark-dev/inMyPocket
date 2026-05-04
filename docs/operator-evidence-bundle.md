@@ -13,6 +13,7 @@ It consolidates the evidence needed to support the current milestone claim:
 Primary refresh path:
 
 ```powershell
+pnpm ops:show-hardening
 pnpm ops:evidence
 pnpm ops:verify
 ```
@@ -22,6 +23,7 @@ Codex first-wave operator loop:
 - If proof or readiness looks stale, start with `docs/codex-operator-bootstrap.md`.
 - Use `docs/codex-automation-playbooks.md` for approved recurring follow-up lanes.
 - Use `docs/codex-memory-guidelines.md` only for durable context that does not belong directly in repo docs.
+- See `docs/wiki/index.md` for the current hardening state, execution graph, and repo-local agent handoff.
 
 Generated evidence is written as an immutable per-run bundle under `.ops-evidence/ops-evidence-<timestamp>/`.
 Each bundle contains `report.md`, `manifest.json`, and a dedicated `ui-assets/` folder for screenshots and printable PDF output.
@@ -36,6 +38,9 @@ That same artifact now also carries accepted local limits, explicit external blo
 The unlocked `/admin` console now reads that canonical release-health verdict and the operator evidence bundle directly, so operators can see the verdict, proved checklist, current limits, blockers, and handoff requirements in-app.
 `operator-proof.json` is the machine-readable handoff packet; `operator-proof.md` is the human-readable companion summary.
 `pnpm ops:verify` also writes `.ops-evidence/external-proof-handoff.json` and `.ops-evidence/external-proof-handoff.md` as dedicated exportable packets for external hosted/payment follow-up.
+
+`.ops-evidence/` is local/generated and is intentionally ignored by git. Do not commit or force-add per-run bundles, browser profiles, screenshots, PDFs, or raw diagnostic reports from that directory. For external handoff, use sanitized `pnpm ops:handoff` output, hosted CI artifact links, or manually reviewed excerpts.
+`pnpm boundary:check` enforces this by failing if local/generated evidence artifacts are tracked.
 Hosted CI also writes `.ops-evidence/hosted-attestation.json`, which records hosted provenance metadata for the latest run.
 The unlocked `/admin` console treats that attestation as provenance-only context; the canonical verdict and proof scope come from `release-health.json`.
 Local simulations of hosted provenance are now explicitly marked as simulations so the operator surface does not overclaim hosted observation.
@@ -52,7 +57,6 @@ Last refreshed: 2026-04-16
 ### Ready
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `APP_URL`
 - `ADMIN_ACCESS_TOKEN`
@@ -68,6 +72,8 @@ Verified through local smoke:
 
 - `/` returned `200`
 - `/printable` returned `200`
+- `97401` returned a full Walmart-led basket state after the Eugene seed refresh
+- `97401` source-quality labels distinguish item-page checks from broader official checks
 - `POST /api/waitlist` returned `400` for invalid payloads
 - `POST /api/waitlist` returned `200` for a valid weekly-updates signup
 
@@ -76,11 +82,11 @@ Verified through local smoke:
 Verified through local smoke:
 
 - locked `/admin` hides readiness and env details
-- unauthenticated `/api/observations` is blocked
+- unauthenticated `/api/admin/observations` is blocked
 - admin unlock reset succeeds
 - repeated invalid unlock attempts lock out with `429` and `Retry-After`
 - valid admin unlock succeeds
-- authenticated `/api/observations` is reachable
+- authenticated `/api/admin/observations` is reachable
 
 Current immutable bundle pointers:
 
@@ -100,18 +106,37 @@ Verified through local smoke:
 
 ## Supabase Trust-Boundary Proof
 
-Verified through CLI query + REST checks:
+Verified through CLI query + server-side smoke:
 
 - `published_price_observations` exists
-- public published view returns `200`
-- public published view continues to return governed rows without exposing the fresh unpublished manual save
-- private base table `price_observations` returns `401 permission denied`
+- public product routes read governed basket data through the app server rather than a browser-side Supabase client
+- publishable-key REST is no longer required for the active product path
 - deny policies exist on:
   - `price_observations`
   - `observation_evidence`
   - `founding_member_signups`
+- `anon`, `authenticated`, and `public` should not have direct grants on `published_price_observations` in the hardened boundary model
 - `observation-evidence` bucket exists and is private
 - restrictive deny policy exists on `storage.objects` for the `observation-evidence` bucket
+
+If publishable-key REST returns governed rows, apply:
+
+```powershell
+pnpm ops:harden-published-view
+pnpm ops:harden-published-view:apply
+```
+
+If Supabase CLI is not linked but SQL Editor access exists, use:
+
+```powershell
+pnpm ops:show-supabase-sql
+```
+
+The wrapper and smoke/evidence failure output print only sanitized summaries. They must not print Supabase keys, raw REST headers, raw REST response bodies, or service-role values.
+Expected verification summaries:
+
+- `forbidden_direct_grant_count = 0`
+- `service_role_select_grant_count = 1`
 
 ## Commands Used
 
@@ -121,6 +146,8 @@ pnpm lint
 pnpm test
 pnpm build
 pnpm smoke:local -SkipPayment
+pnpm ops:harden-published-view:apply
+pnpm ops:harden-published-view:verify
 .\scripts\supabase-cli.ps1 db query --linked "select tablename, policyname, cmd, roles from pg_policies where schemaname = 'public' and tablename in ('price_observations','observation_evidence','founding_member_signups') order by tablename, policyname;"
 .\scripts\supabase-cli.ps1 db query --linked "select table_name from information_schema.views where table_schema = 'public' and table_name = 'published_price_observations';"
 .\scripts\supabase-cli.ps1 db query --linked "select id, name, public from storage.buckets where id = 'observation-evidence';"

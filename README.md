@@ -58,7 +58,6 @@ pnpm visual:check
 - Public basket pages now read from a sanitized published view rather than the full private observations table.
 - Evidence files are expected to live in a private Supabase Storage bucket.
 - Base tables and the `observation-evidence` bucket now carry explicit deny policies for `anon` and `authenticated`; public access is limited to the sanitized published view.
-- Stripe legacy routes remain in the repo as dormant code paths, but direct payment is not part of the active product model.
 - The current monetization direction is non-payment product access with donation and advertising support under consideration.
 - Admin unlock now requires both `ADMIN_ACCESS_TOKEN` and `ADMIN_SESSION_SECRET`.
 - Admin unlock now surfaces remaining attempts and cooldown guidance in the form, based on the current local rate-limit policy.
@@ -74,16 +73,18 @@ pnpm visual:check
 - Homepage now accepts a 5-digit ZIP as the primary location control, remembers the last supported ZIP locally, and adds nearest tracked-store context without changing cheapest-store ranking.
 - The weekly-updates form now supports self vs caregiver copy/trust framing and emits lightweight browser-side waitlist events for the homepage lane.
 - Member-only, coupon-required, club-only, and weekly-ad values stay separated from the default basket total.
-- The repo-local bootstrap script writes `.env.local` in the correct project root and prints the correct Stripe webhook route.
+- The repo-local bootstrap script writes `.env.local` in the correct project root and prints the active non-payment bootstrap commands.
 - Supabase is invoked through `pnpm dlx supabase@latest`, and Stripe can be run from the repo-local wrapper if `.tools/stripe-cli/stripe.exe` exists.
 - PowerShell-backed `pnpm` tasks now auto-select `powershell`, `pwsh`, or `powershell.exe`, so WSL/Linux shells do not need a hardcoded `powershell` binary name.
 - Core `pnpm` commands that rely on `next`, `eslint`, or `tsc` now resolve those CLIs through a repo-local Node launcher, so mixed Windows/WSL installs do not depend on shell-specific `.bin` shims.
 - `pnpm visual:check` now auto-selects `python` or `python3` before running the visual verifier.
 - When working from WSL/Linux, install dependencies inside that environment instead of reusing Windows-installed `node_modules`; if `pnpm build` reports missing Next Turbopack native bindings on `linux/x64`, remove `node_modules` and reinstall (`CI=true pnpm install --frozen-lockfile`).
-- `/api/waitlist` remains the live non-payment weekly-updates path when checkout is disabled; `/api/founding-member/checkout` stays available for the Stripe-backed payment lane when Stripe test-mode secrets are supplied.
+- `/api/waitlist` remains the live non-payment weekly-updates path.
 - `pnpm smoke:local` runs the local HTTP smoke sequence against a running app and leaves Supabase/Stripe live proof as explicit follow-up items.
+- `pnpm smoke:public` runs only public dashboard/printable route checks for `30328`, `97401`, and unsupported ZIP handling; it does not touch admin or Supabase direct-grant proof. Set `APP_URL` or pass `-BaseUrl` when previewing on a non-default port.
 - `pnpm smoke:local` now also checks non-default comparison scenario routes so compare/print parity is covered in the local non-payment lane.
 - `pnpm ops:evidence` generates an immutable operator-facing evidence bundle under `.ops-evidence/ops-evidence-<timestamp>/`, writes `manifest.json` inside the bundle, refreshes `.ops-evidence/LATEST.md` and `.ops-evidence/latest-run.json`, records whether live Supabase proof was available, and exits non-zero if smoke or capture steps fail.
+- `.ops-evidence/` is local/generated and git-ignored; do not force-stage it. Use `pnpm ops:handoff` output or hosted CI artifact links for external handoff.
 - `pnpm ops:verify` consumes the latest evidence pointers and manifest, verifies contract consistency, and writes canonical release-health verdicts to `.ops-evidence/release-health.json` and `.ops-evidence/release-health.md`.
 - `pnpm ops:verify` also writes `.ops-evidence/operator-proof.json` and `.ops-evidence/operator-proof.md`, so operators get one checklist-oriented artifact instead of reconstructing proof from multiple files.
 - `pnpm ops:verify` now also records external blockers and handoff requirements inside `operator-proof`, so the remaining hosted/payment work is action-ready.
@@ -98,9 +99,18 @@ pnpm visual:check
 - `pnpm ops:verify` folds the latest advisory visual regression result into `release-health.json` / `release-health.md` without turning it into a hard release blocker, and CI now runs `visual:check` plus `ops:attest-hosted` before `ops:verify` so the canonical verdict reflects the same run's visual advisory and hosted provenance.
 - `pnpm port:check` reports whether port `3000` is already occupied and prints the owning process when possible.
 - `pnpm start:3001` starts the production server on port `3001` after first confirming the port is free.
+- `pnpm start:3109` starts the production server on port `3109`, matching the current local browser preview lane.
+- `pnpm smoke:public:3109` runs public-only smoke against `http://localhost:3109`.
 - `pnpm dev:3001` starts the dev server on port `3001` after first confirming the port is free; if a restricted terminal blocks `next dev` child-process startup, the wrapper prints guidance.
 - GitHub Actions now enforces the non-payment quality gate (`typecheck`, `lint`, `test`, `build`) and a hosted Windows `ops:evidence` + `ops:verify` + hosted attestation lane, plus an advisory visual regression check with uploaded diff artifacts.
+- `pnpm boundary:check` now enforces the repo’s public/admin/runtime boundary rules before the main CI quality gate.
+- `pnpm secret:check` scans tracked text files for common committed API key/token patterns before typecheck in CI.
+- `pnpm ops:local-preflight` runs boundary, secret, typecheck, lint, test, and build in the local handoff order.
+- `pnpm ops:show-hardening` prints the current Supabase direct-grant hardening handoff without exposing secrets.
 - Current project status and release gating live in:
+  - `docs/wiki/index.md`
+  - `docs/operator-first-mvp-contract.md`
+  - `docs/plans/2026-04-23-operator-first-mvp-implementation-breakdown.md`
   - `docs/product-harness-status.md`
   - `docs/release-readiness-checklist.md`
   - `docs/accepted-risks.md`
@@ -112,5 +122,3 @@ pnpm visual:check
   - `docs/codex-automation-playbooks.md`
   - `docs/codex-memory-guidelines.md`
   - `docs/codex-handoff-2026-04-16-typecheck-docs.md` (historical typecheck-recovery checkpoint; use current status/roadmap docs for live continuation)
-
-

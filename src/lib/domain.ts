@@ -34,7 +34,8 @@ export type ComparisonScenario =
   | "weekly_ad_partial_total";
 
 export type ConfidenceLevel = "high" | "medium" | "low";
-export type FoundingMemberSignupStatus =
+export type SourceQuality = "item_page" | "category_page" | "search_page" | "operator_verified";
+export type WaitlistLeadStatus =
   | "pending_checkout"
   | "paid"
   | "canceled"
@@ -104,6 +105,7 @@ export interface PriceObservation {
   comparabilityGrade: ComparabilityGrade;
   sourceUrl: string;
   sourceLabel: string;
+  sourceQuality?: SourceQuality;
   collectedAt: string;
   confidence: ConfidenceLevel;
   notes?: string;
@@ -168,7 +170,7 @@ export interface NearestStoreContext {
 
 export interface ItemComparisonRow {
   item: AnchorBasketItem;
-  pricesByRetailer: Record<RetailerId, SelectedPrice | null>;
+  pricesByRetailer: Partial<Record<RetailerId, SelectedPrice | null>>;
 }
 
 export interface PreviewResult {
@@ -187,12 +189,12 @@ export interface ObservationEvidence {
   uploadedAt: string;
 }
 
-export interface FoundingMemberSignup {
+export interface WaitlistLead {
   id: string;
   email: string;
   zipCode: string;
   planCode: string;
-  status: FoundingMemberSignupStatus;
+  status: WaitlistLeadStatus;
   stripeCustomerId?: string | null;
   stripeCheckoutSessionId?: string | null;
   stripeSubscriptionId?: string | null;

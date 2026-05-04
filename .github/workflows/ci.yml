@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Boundary check
+        run: pnpm boundary:check
+
+      - name: Secret scan
+        run: pnpm secret:check
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -119,8 +125,13 @@ jobs:
             .ops-evidence/release-health.md
             .ops-evidence/hosted-attestation.json
             .ops-evidence/visual-regression.latest.json
-            .ops-evidence/visual-regression-*/
-            .ops-evidence/ops-evidence-*/
+            .ops-evidence/visual-regression-*/visual-regression.json
+            .ops-evidence/visual-regression-*/visual-regression.md
+            .ops-evidence/visual-regression-*/*.diff.png
+            .ops-evidence/ops-evidence-*/report.md
+            .ops-evidence/ops-evidence-*/manifest.json
+            .ops-evidence/ops-evidence-*/ui-assets/*.png
+            .ops-evidence/ops-evidence-*/ui-assets/*.pdf
           include-hidden-files: true
 
       - name: Stop app

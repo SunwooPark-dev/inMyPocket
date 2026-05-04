@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { saveImportedObservation, saveImportedWaitlistEntry } from "../src/lib/server-storage.ts";
+import { logger } from "./logger.ts";
+
+import { saveImportedObservation } from "../src/lib/observation-storage.ts";
+import { saveImportedWaitlistEntry } from "../src/lib/waitlist-storage.ts";
 
 async function readJsonFile<T>(filepath: string) {
   try {
@@ -21,7 +24,7 @@ async function main() {
   const waitlistEntries = await readJsonFile<Array<Record<string, unknown>>>(waitlistPath);
 
   if (dryRun) {
-    console.log(`dry-run observations=${observations.length} waitlist=${waitlistEntries.length}`);
+    logger.info(`dry-run observations=${observations.length} waitlist=${waitlistEntries.length}`);
     return;
   }
 
@@ -38,7 +41,7 @@ async function main() {
     importedWaitlist += 1;
   }
 
-  console.log(`imported observations=${importedObservations} waitlist=${importedWaitlist}`);
+  logger.info(`imported observations=${importedObservations} waitlist=${importedWaitlist}`);
 }
 
 main().catch((error) => {

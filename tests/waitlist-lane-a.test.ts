@@ -12,8 +12,8 @@ import {
 test("captureWeeklyUpdatesLead creates a weekly-updates signup for a valid submission", async () => {
   const created: Array<{ email: string; zipCode: string; planCode: string; status?: string }> = [];
   const storage: WaitlistCaptureStorage = {
-    findLatestFoundingMemberSignupByIdentity: async () => null,
-    createFoundingMemberSignup: async (input) => {
+    findLatestWaitlistLeadByIdentity: async () => null,
+    createWaitlistLead: async (input) => {
       created.push(input);
       return {
         id: "signup-1",
@@ -28,7 +28,7 @@ test("captureWeeklyUpdatesLead creates a weekly-updates signup for a valid submi
         updatedAt: "2026-04-15T00:00:00.000Z"
       };
     },
-    updateFoundingMemberSignup: async () => {
+    updateWaitlistLead: async () => {
       throw new Error("should not update when creating a fresh weekly-updates lead");
     }
   };
@@ -54,11 +54,11 @@ test("captureWeeklyUpdatesLead creates a weekly-updates signup for a valid submi
 
 test("captureWeeklyUpdatesLead rejects invalid email and invalid ZIP with 400 errors", async () => {
   const storage: WaitlistCaptureStorage = {
-    findLatestFoundingMemberSignupByIdentity: async () => null,
-    createFoundingMemberSignup: async () => {
+    findLatestWaitlistLeadByIdentity: async () => null,
+    createWaitlistLead: async () => {
       throw new Error("should not create invalid weekly-updates leads");
     },
-    updateFoundingMemberSignup: async () => {
+    updateWaitlistLead: async () => {
       throw new Error("should not update invalid weekly-updates leads");
     }
   };
@@ -86,7 +86,7 @@ test("captureWeeklyUpdatesLead reuses an existing honest weekly-updates signup w
   let createdCount = 0;
   let updatedId: string | null = null;
   const storage: WaitlistCaptureStorage = {
-    findLatestFoundingMemberSignupByIdentity: async () => ({
+    findLatestWaitlistLeadByIdentity: async () => ({
       id: "signup-2",
       email: "person@example.com",
       zipCode: "30328",
@@ -98,11 +98,11 @@ test("captureWeeklyUpdatesLead reuses an existing honest weekly-updates signup w
       createdAt: "2026-04-15T00:00:00.000Z",
       updatedAt: "2026-04-15T00:00:00.000Z"
     }),
-    createFoundingMemberSignup: async () => {
+    createWaitlistLead: async () => {
       createdCount += 1;
       throw new Error("should not create a duplicate weekly-updates lead");
     },
-    updateFoundingMemberSignup: async (signupId) => {
+    updateWaitlistLead: async (signupId) => {
       updatedId = signupId;
       throw new Error("should not rewrite an already honest weekly-updates lead");
     }
@@ -124,7 +124,7 @@ test("captureWeeklyUpdatesLead reuses an existing honest weekly-updates signup w
 test("captureWeeklyUpdatesLead repairs a misleading pending_checkout weekly-updates lead instead of leaving it pending", async () => {
   const updates: Array<{ signupId: string; patch: { status?: string } }> = [];
   const storage: WaitlistCaptureStorage = {
-    findLatestFoundingMemberSignupByIdentity: async () => ({
+    findLatestWaitlistLeadByIdentity: async () => ({
       id: "signup-3",
       email: "person@example.com",
       zipCode: "30328",
@@ -136,10 +136,10 @@ test("captureWeeklyUpdatesLead repairs a misleading pending_checkout weekly-upda
       createdAt: "2026-04-15T00:00:00.000Z",
       updatedAt: "2026-04-15T00:00:00.000Z"
     }),
-    createFoundingMemberSignup: async () => {
+    createWaitlistLead: async () => {
       throw new Error("should not create a second weekly-updates lead when one already exists");
     },
-    updateFoundingMemberSignup: async (signupId, patch) => {
+    updateWaitlistLead: async (signupId, patch) => {
       updates.push({ signupId, patch });
       return {
         id: signupId,

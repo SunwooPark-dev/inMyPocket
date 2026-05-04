@@ -507,12 +507,27 @@ export function applyReleaseHealthFreshness(
   };
 }
 
-export async function readLatestReleaseHealthSummary() {
+export async function readCurrentReleaseHealthVerdict() {
   const releaseHealthPath = join(process.cwd(), ".ops-evidence", "release-health.json");
 
   try {
     const raw = await readFile(releaseHealthPath, "utf8");
     const parsed = JSON.parse(stripBom(raw)) as ReleaseHealthVerdict;
+    const [latestRun, hostedAttestation, visualRegression] = await Promise.all([
+      readLatestOpsEvidenceRun(),
+      readLatestHostedOpsAttestation(),
+      readLatestVisualRegression()
+    ]);
+
+    return applyReleaseHealthFreshness(parsed, latestRun, hostedAttestation, visualRegression);
+  } catch {
+    return null;
+  }
+}
+
+export async function readLatestReleaseHealthSummary() {
+  try {
+    const parsed = await readCurrentReleaseHealthVerdict();
     return createReleaseHealthSummary(parsed);
   } catch {
     return null;
@@ -645,7 +660,7 @@ export function createOperatorProofSummary(
       status: releaseHealth.liveSupabaseProofStatus === "passed" ? "proved" : "attention",
       detail:
         releaseHealth.liveSupabaseProofStatus === "passed"
-          ? "Published view access and private base-table denial were proven in the current non-payment lane."
+          ? "Public basket reads are served by the app server, while direct grants on the published view are not part of the active contract."
           : "Live Supabase trust-boundary proof is not currently in a passed state."
     },
     {
@@ -705,6 +720,24 @@ export async function readLatestOperatorProofSummary() {
   const operatorProofPath = join(process.cwd(), ".ops-evidence", "operator-proof.json");
 
   try {
+    const [releaseHealth, latestRun, visualRegression, hostedProofObservation] = await Promise.all([
+      readCurrentReleaseHealthVerdict(),
+      readLatestOpsEvidenceRun(),
+      readLatestVisualRegression(),
+      readLatestHostedProofObservation()
+    ]);
+
+    const liveSummary = createOperatorProofSummary(
+      releaseHealth,
+      latestRun,
+      visualRegression,
+      hostedProofObservation
+    );
+
+    if (liveSummary) {
+      return liveSummary;
+    }
+
     const raw = await readFile(operatorProofPath, "utf8");
     const parsed = JSON.parse(stripBom(raw)) as OperatorProofArtifact;
 

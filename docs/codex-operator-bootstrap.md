@@ -31,6 +31,19 @@ Use this runbook when you need to decide:
 4. If the task creates durable operational truth, use `docs/codex-memory-guidelines.md`.
 5. If none of the above applies, fall back to the normal repo runbooks and keep Codex usage within the support boundary.
 
+## Codex Key for Coding Tasks
+
+Use this key when the operator asks Codex to change code, tests, scripts, or repo docs end-to-end.
+
+1. Explore the codebase first: identify relevant files, tests, configs, conventions, applicable `AGENTS.md` rules, and current worktree changes.
+2. Run independent discovery in parallel when possible: related file search, test discovery, config/script discovery, and error-log inspection can happen concurrently.
+3. Diagnose the root cause before editing; do not stop at analysis when a safe fix is feasible.
+4. Edit sequentially after diagnosis, using the smallest coherent change that preserves unrelated user work.
+5. Keep an internal checklist for every user requirement and do not finish until each item is `[done]`, `[blocked]`, or `[not applicable]`.
+6. Verify with the narrowest meaningful command first, then broaden to type-check, lint, build, or full tests when appropriate.
+7. If verification fails, inspect the failure, make one focused fix, and rerun the relevant verification before closing out.
+8. Final operator output stays short: changed files, root-cause reason, exact verification results, and any blocker only.
+
 ## First-Wave Automation Lane
 
 Use the automation lane for recurring repo follow-up, not one-off proof reconciliation.

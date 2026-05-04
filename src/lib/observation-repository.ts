@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { isSupabaseConfigured } from "./env.ts";
 import type { GovernedPublicObservation, ObservationReviewStatus } from "./observation-feed.ts";
-import { getSupabasePublicClient, getSupabaseServiceClient } from "./supabase.ts";
+import { getSupabaseServiceClient } from "./supabase.ts";
 import {
   deleteEvidenceById,
   fetchEvidenceMap,
@@ -40,10 +40,46 @@ function toOptionalNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function mapObservationRecord(
+function inferSourceQuality(record: ObservationRecord): PriceObservation["sourceQuality"] {
+  const explicitQuality = record.source_quality ? String(record.source_quality) : "";
+  const sourceLabel = record.source_label ? String(record.source_label).toLowerCase() : "";
+  const sourceUrl = record.source_url ? String(record.source_url).toLowerCase() : "";
+  const explicitSourceQualities: NonNullable<PriceObservation["sourceQuality"]>[] = [
+    "item_page",
+    "category_page",
+    "search_page",
+    "operator_verified"
+  ];
+
+  if (explicitSourceQualities.includes(explicitQuality as NonNullable<PriceObservation["sourceQuality"]>)) {
+    return explicitQuality as NonNullable<PriceObservation["sourceQuality"]>;
+  }
+
+  const value = explicitQuality.toLowerCase() || sourceLabel || sourceUrl;
+
+  if (value.includes("search_page") || value.includes("search")) {
+    return "search_page";
+  }
+
+  if (value.includes("category_page") || value.includes("category") || value.includes("/browse/") || value.includes("/c/")) {
+    return "category_page";
+  }
+
+  if (value.includes("operator_verified") || value.includes("operator")) {
+    return "operator_verified";
+  }
+
+  if (value.includes("item_page") || value.includes("product") || value.includes("/ip/") || value.includes("/p/")) {
+    return "item_page";
+  }
+
+  return undefined;
+}
+
+export function mapStoredObservationRecord(
   record: ObservationRecord,
-  evidenceMap: Map<string, ObservationEvidence>
-): PriceObservation {
+  evidenceMap: Map<string, ObservationEvidence> = new Map()
+): GovernedPublicObservation {
   const evidenceId =
     record.evidence_id === null || record.evidence_id === undefined
       ? null
@@ -65,6 +101,7 @@ function mapObservationRecord(
     comparabilityGrade: String(record.comparability_grade) as PriceObservation["comparabilityGrade"],
     sourceUrl: String(record.source_url),
     sourceLabel: String(record.source_label),
+    sourceQuality: inferSourceQuality(record),
     collectedAt: new Date(String(record.collected_at)).toISOString(),
     confidence: String(record.confidence) as PriceObservation["confidence"],
     notes: record.notes ? String(record.notes) : undefined,
@@ -76,7 +113,20 @@ function mapObservationRecord(
     evidenceOriginalName: evidence?.originalName ?? null,
     evidenceContentType: evidence?.contentType ?? null,
     evidenceByteSize: evidence?.byteSize ?? null,
-    evidenceUploadedAt: evidence?.uploadedAt ?? null
+    evidenceUploadedAt: evidence?.uploadedAt ?? null,
+    reviewStatus:
+      (record.review_status ? String(record.review_status) : null) as ObservationReviewStatus | null,
+    approvedAt: toOptionalIsoString(record.approved_at),
+    approvedBy: record.approved_by ? String(record.approved_by) : null,
+    publishedAt: toOptionalIsoString(record.published_at),
+    publishedSnapshotId: record.published_snapshot_id ? String(record.published_snapshot_id) : null,
+    snapshotIsActive:
+      record.snapshot_is_active === null || record.snapshot_is_active === undefined
+        ? null
+        : Boolean(record.snapshot_is_active),
+    snapshotCoverageRate: toOptionalNumber(record.snapshot_coverage_rate),
+    retiredAt: toOptionalIsoString(record.retired_at),
+    invalidatedAt: toOptionalIsoString(record.invalidated_at)
   };
 }
 
@@ -96,6 +146,7 @@ function mapPublicObservationRecord(record: ObservationRecord): GovernedPublicOb
     comparabilityGrade: String(record.comparability_grade) as PriceObservation["comparabilityGrade"],
     sourceUrl: String(record.source_url),
     sourceLabel: String(record.source_label),
+    sourceQuality: inferSourceQuality(record),
     collectedAt: new Date(String(record.collected_at)).toISOString(),
     confidence: String(record.confidence) as PriceObservation["confidence"],
     isEstimatedWeight: Boolean(record.is_estimated_weight),
@@ -145,17 +196,16 @@ export async function readStoredObservations() {
     .filter((value): value is string => Boolean(value));
   const evidenceMap = await fetchEvidenceMap([...new Set(evidenceIds)]);
 
-  return records.map((record) => mapObservationRecord(record, evidenceMap));
+  return records.map((record) => mapStoredObservationRecord(record, evidenceMap));
 }
 
 export async function readPublicStoredObservations() {
-  const publicClient = getSupabasePublicClient();
-
-  if (!publicClient) {
+  if (!isSupabaseConfigured()) {
     return [] as GovernedPublicObservation[];
   }
 
-  const { data, error } = await publicClient
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
     .from("published_price_observations")
     .select(
       "id,canonical_product_id,retailer_id,store_id,zip_code,channel,price_type,price_amount,measurement_value,measurement_unit,pack_label,comparability_grade,source_url,source_label,collected_at,confidence,is_estimated_weight,is_membership_required,is_coupon_required,is_club_only,review_status,approved_at,approved_by,published_at,published_snapshot_id,retired_at,invalidated_at,snapshot_is_active,snapshot_coverage_rate"
@@ -224,7 +274,7 @@ export async function saveObservation(
     ? new Map<string, ObservationEvidence>([[evidence.id, evidence]])
     : new Map<string, ObservationEvidence>();
 
-  return mapObservationRecord(data as ObservationRecord, evidenceMap);
+  return mapStoredObservationRecord(data as ObservationRecord, evidenceMap);
 }
 
 export async function saveImportedObservation(rawObservation: Partial<PriceObservation>) {
@@ -243,6 +293,7 @@ export async function saveImportedObservation(rawObservation: Partial<PriceObser
     comparabilityGrade: rawObservation.comparabilityGrade ?? "partial",
     sourceUrl: rawObservation.sourceUrl ?? "",
     sourceLabel: rawObservation.sourceLabel ?? "Legacy import",
+    sourceQuality: rawObservation.sourceQuality,
     collectedAt: rawObservation.collectedAt ?? new Date().toISOString(),
     confidence: rawObservation.confidence ?? "low",
     notes: rawObservation.notes,

@@ -29,12 +29,26 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.stdout.log
+*.stderr.log
+tmp-*
+dev*.log
+next-start.*.log
+.smoke-debug-*
+.tmp-gh-artifact*/
+
+# local/generated operator artifacts
+.ops-evidence/
+.omx/
+.sisyphus/
+.tools/
 
 # env files (can opt-in for committing if needed)
 .env*
 
 # vercel
 .vercel
+supabase/.temp/
 
 # typescript
 *.tsbuildinfo

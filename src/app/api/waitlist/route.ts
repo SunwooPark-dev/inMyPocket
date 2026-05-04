@@ -1,8 +1,8 @@
 import {
-  createFoundingMemberSignup,
-  findLatestFoundingMemberSignupByIdentity,
-  updateFoundingMemberSignup
-} from "../../../lib/server-storage";
+  createWaitlistLead,
+  findLatestWaitlistLeadByIdentity,
+  updateWaitlistLead
+} from "../../../lib/waitlist-storage";
 import { captureWeeklyUpdatesLead } from "../../../lib/waitlist";
 
 type WaitlistPayload = {
@@ -13,9 +13,9 @@ type WaitlistPayload = {
 export async function POST(request: Request) {
   const payload = (await request.json().catch(() => null)) as WaitlistPayload | null;
   const result = await captureWeeklyUpdatesLead(payload ?? {}, {
-    findLatestFoundingMemberSignupByIdentity,
-    createFoundingMemberSignup,
-    updateFoundingMemberSignup
+    findLatestWaitlistLeadByIdentity,
+    createWaitlistLead,
+    updateWaitlistLead
   });
 
   if (result.ok === false) {

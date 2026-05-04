@@ -1,7 +1,7 @@
-import type { FoundingMemberSignup, FoundingMemberSignupStatus } from "./domain";
+import type { WaitlistLead, WaitlistLeadStatus } from "./domain";
 
 export const WEEKLY_UPDATES_PLAN_CODE = "weekly-updates";
-export const WEEKLY_UPDATES_STATUS = "weekly_updates_subscribed" satisfies FoundingMemberSignupStatus;
+export const WEEKLY_UPDATES_STATUS = "weekly_updates_subscribed" satisfies WaitlistLeadStatus;
 
 type WaitlistPayload = {
   email?: string;
@@ -9,30 +9,30 @@ type WaitlistPayload = {
 };
 
 export type WaitlistCaptureStorage = {
-  findLatestFoundingMemberSignupByIdentity(input: {
+  findLatestWaitlistLeadByIdentity(input: {
     email: string;
     zipCode: string;
     planCode: string;
-  }): Promise<FoundingMemberSignup | null>;
-  createFoundingMemberSignup(input: {
+  }): Promise<WaitlistLead | null>;
+  createWaitlistLead(input: {
     email: string;
     zipCode: string;
     planCode: string;
-    status?: FoundingMemberSignupStatus;
-  }): Promise<FoundingMemberSignup>;
-  updateFoundingMemberSignup(
+    status?: WaitlistLeadStatus;
+  }): Promise<WaitlistLead>;
+  updateWaitlistLead(
     signupId: string,
     patch: {
-      status?: FoundingMemberSignupStatus;
+      status?: WaitlistLeadStatus;
     }
-  ): Promise<FoundingMemberSignup>;
+  ): Promise<WaitlistLead>;
 };
 
 export type WaitlistCaptureResult =
   | {
       ok: true;
       status: 200;
-      signup: FoundingMemberSignup;
+      signup: WaitlistLead;
       message: string;
     }
   | {
@@ -92,7 +92,7 @@ export async function captureWeeklyUpdatesLead(
     };
   }
 
-  const existingSignup = await storage.findLatestFoundingMemberSignupByIdentity({
+  const existingSignup = await storage.findLatestWaitlistLeadByIdentity({
     email,
     zipCode,
     planCode: WEEKLY_UPDATES_PLAN_CODE
@@ -108,7 +108,7 @@ export async function captureWeeklyUpdatesLead(
   }
 
   if (existingSignup) {
-    const repairedSignup = await storage.updateFoundingMemberSignup(existingSignup.id, {
+    const repairedSignup = await storage.updateWaitlistLead(existingSignup.id, {
       status: WEEKLY_UPDATES_STATUS
     });
 
@@ -120,7 +120,7 @@ export async function captureWeeklyUpdatesLead(
     };
   }
 
-  const signup = await storage.createFoundingMemberSignup({
+  const signup = await storage.createWaitlistLead({
     email,
     zipCode,
     planCode: WEEKLY_UPDATES_PLAN_CODE,

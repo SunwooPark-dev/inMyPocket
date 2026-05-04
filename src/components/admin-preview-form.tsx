@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ANCHOR_BASKET, PILOT_CLUSTERS, RETAILERS, STORES } from "../lib/catalog";
 import { previewObservation } from "../lib/compare";
 import { ComparabilityGrade, MeasurementUnit, PriceType } from "../lib/domain";
+import { ADMIN_OBSERVATIONS_API_PATH } from "../lib/api-paths";
 
 const DEFAULT_FORM = {
   canonicalProductId: ANCHOR_BASKET[0].id,
@@ -79,7 +80,7 @@ export function AdminPreviewForm({ canSave }: AdminPreviewFormProps) {
       payload.set("evidence", evidenceFile);
     }
 
-    const response = await fetch("/api/observations", {
+    const response = await fetch(ADMIN_OBSERVATIONS_API_PATH, {
       method: "POST",
       body: payload
     });
@@ -93,7 +94,7 @@ export function AdminPreviewForm({ canSave }: AdminPreviewFormProps) {
     }
 
     setSaveStatus("done");
-    setSaveMessage("Observation saved. The dashboard now prefers this live record over the seed value.");
+    setSaveMessage("Private observation saved for review. It is not public until approved and published.");
     setEvidenceFile(null);
     setNotes("");
     router.refresh();

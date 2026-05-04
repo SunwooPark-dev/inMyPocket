@@ -31,9 +31,11 @@
 ## Storage model
 
 - Manual observations are persisted in `price_observations` on Supabase Postgres.
-- Public basket rendering should read from `published_price_observations`, not directly from `price_observations`.
+- Public basket rendering should read governed data through the app server, not directly from `price_observations`.
+- Browser/publishable-key clients should not have direct grants on `published_price_observations`; app-server reads use the service role.
+- If direct grants drift open, run `pnpm ops:harden-published-view:apply` from a linked Supabase environment.
 - Raw evidence files are stored in the private `observation-evidence` bucket and linked through `observation_evidence`.
-- Founding member signups and Stripe lifecycle state are stored in `founding_member_signups`.
+- Weekly-updates signups are stored in `founding_member_signups`.
 - The dashboard merges stored observations over demo seed values for the same `store + item + priceType`.
 - `price_observations`, `observation_evidence`, and `founding_member_signups` carry explicit deny policies for `anon` and `authenticated`.
 - `storage.objects` also carries an explicit restrictive deny policy for the `observation-evidence` bucket.
@@ -46,12 +48,9 @@
 
 ## Payments
 
-- Founding member checkout uses Stripe Checkout.
-- Status changes are written by `/api/stripe/webhook`.
-- `checkout.session.completed` marks paid.
-- `checkout.session.expired` marks canceled.
-- `invoice.payment_failed` marks payment failed for recurring follow-up states.
-- In the current environment, payment proof is deferred until Stripe test-mode secrets are supplied.
+- Direct payment is not part of the active product model.
+- Donation and advertising are the current monetization directions under consideration.
+- If the product later reintroduces payment, treat it as a new lane rather than reviving old assumptions by default.
 
 ## Migration
 
@@ -62,7 +61,7 @@
 ## Local bootstrap
 
 - Correct bootstrap script: `scripts/bootstrap-local.ps1`
-- Correct webhook route for Stripe CLI forwarding: `/api/stripe/webhook`
+- Active signup path: `/api/waitlist`
 
 ## Codex operator baseline
 
