@@ -30,7 +30,10 @@ test("ZIP validation helpers preserve the pilot-only contract", () => {
   assert.equal(isValidZipFormat("30328"), true);
   assert.equal(isValidZipFormat("3032"), false);
   assert.equal(isSupportedPilotZip("30328"), true);
+  assert.equal(isSupportedPilotZip("30022"), true);
+  assert.equal(isSupportedPilotZip("30076"), true);
   assert.equal(isSupportedPilotZip("30329"), false);
+  assert.equal(isSupportedPilotZip("97401"), false);
 });
 
 test("nearest store context is built separately from cheapest ranking", () => {

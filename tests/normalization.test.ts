@@ -224,6 +224,41 @@ test("operator next actions prioritize hosted observation without a payment foll
   assert.equal(actions.some((action) => action.key === "reopen-payment"), false);
 });
 
+test("operator local-only guidance does not reopen intentionally deferred payment proof", () => {
+  const releaseHealth = {
+    verifiedAt: "2026-04-16T09:47:28.054Z",
+    formattedVerifiedAt: "Apr 16, 2026, 2:47 AM",
+    verdict: "green" as const,
+    proofLevel: "full" as const,
+    verificationScope: "local-simulated" as const,
+    proofLabel: "full (local-simulated)",
+    freshnessStatus: "current" as const,
+    staleReasons: [],
+    hostedObservationStatus: "local-simulation" as const,
+    visualRegressionStatus: "green" as const,
+    bundleName: "ops-evidence-20260415-185147",
+    operationsProofStatus: "materially complete",
+    paymentStatus: "deferred",
+    liveSupabaseProofStatus: "passed",
+    errors: []
+  };
+
+  const actions = getOperatorNextActions(releaseHealth);
+  const blockers = getExternalBlockers(releaseHealth);
+  const handoff = getExternalProofHandoff(releaseHealth);
+
+  assert.equal(actions[0]?.key, "observe-hosted");
+  assert.equal(actions.some((action) => action.key === "reopen-payment"), false);
+  assert.equal(blockers.some((blocker) => blocker.key === "payment-proof"), false);
+  assert.equal(handoff.some((item) => item.key === "payment-proof"), false);
+  assert.equal(
+    [...actions.flatMap((action) => action.commands), ...blockers.map((blocker) => blocker.unblockRequirement), ...handoff.flatMap((item) => item.requiredInputs)].some((value) =>
+      /STRIPE_|checkout|webhook/i.test(value)
+    ),
+    false
+  );
+});
+
 test("external blockers expose hosted-proof only when payment is not planned", () => {
   const blockers = getExternalBlockers({
     verifiedAt: "2026-04-16T09:47:28.054Z",
