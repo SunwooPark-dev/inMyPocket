@@ -42,15 +42,6 @@ export function getExternalBlockers(
     });
   }
 
-  if (releaseHealth?.paymentStatus === "deferred") {
-    blockers.push({
-      key: "payment-proof",
-      title: "Payment proof is externally blocked",
-      detail: "Stripe proof remains outside the current merge gate.",
-      unblockRequirement: "Provide STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and STRIPE_PRICE_ID_FOUNDING_MEMBER.",
-      severity: "high"
-    });
-  }
 
   return blockers;
 }
