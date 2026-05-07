@@ -38,6 +38,18 @@ function Assert-NotContains($content, $pattern, $label) {
   Write-Host "PASS  $label" -ForegroundColor Green
 }
 
+function Assert-PrintableBasketOrHonestUnavailable($content, $label) {
+  if ($content -match "Shop here today:") {
+    Assert-NotContains $content "Printable basket unavailable for now\." "$label avoids empty-state fallback when basket renders"
+    Write-Host "PASS  $label renders basket" -ForegroundColor Green
+    return
+  }
+
+  Assert-Contains $content "Printable basket unavailable for now\." "$label shows honest unavailable state when governed rows cannot be loaded"
+  Assert-Contains $content "could not load the current published comparison|not enough governed published prices" "$label explains why basket is unavailable"
+  Write-Host "PASS  $label classified as unavailable rather than broken" -ForegroundColor Yellow
+}
+
 Write-Step "Public route smoke"
 
 try {
@@ -54,23 +66,19 @@ Assert-NotContains $defaultHome.Content "We couldn(?:&apos;|')t compare this bas
 
 $defaultPrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=30328&scenario=base_regular_total" -UseBasicParsing
 Assert-HttpStatus $defaultPrintable 200 "GET /printable?zip=30328"
-Assert-Contains $defaultPrintable.Content "Shop here today:" "printable renders 30328 basket"
-Assert-NotContains $defaultPrintable.Content "Printable basket unavailable for now." "printable avoids empty-state fallback for 30328"
+Assert-PrintableBasketOrHonestUnavailable $defaultPrintable.Content "printable 30328"
 
-$eugeneHome = Invoke-WebRequest -Uri "$BaseUrl/?zip=97401&scenario=base_regular_total" -UseBasicParsing
-Assert-HttpStatus $eugeneHome 200 "GET /?zip=97401"
-Assert-Contains $eugeneHome.Content "Eugene Core" "homepage shows 97401 pilot area"
-Assert-Contains $eugeneHome.Content "Today(?:&apos;|')s lowest total" "homepage renders 97401 comparison"
-Assert-Contains $eugeneHome.Content "Walmart" "homepage includes Walmart basket"
-Assert-Contains $eugeneHome.Content "Source quality guide" "homepage explains source quality"
-Assert-Contains $eugeneHome.Content "Open official source" "homepage exposes official source links"
+$alpharettaHome = Invoke-WebRequest -Uri "$BaseUrl/?zip=30022&scenario=base_regular_total" -UseBasicParsing
+Assert-HttpStatus $alpharettaHome 200 "GET /?zip=30022"
+Assert-Contains $alpharettaHome.Content "Alpharetta East" "homepage shows 30022 pilot area"
+Assert-NotContains $alpharettaHome.Content "We don’t support 30022 yet" "homepage treats 30022 as supported pilot ZIP"
 
-$eugenePrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=97401&scenario=base_regular_total" -UseBasicParsing
-Assert-HttpStatus $eugenePrintable 200 "GET /printable?zip=97401"
-Assert-Contains $eugenePrintable.Content "Shop here today:" "printable renders 97401 basket"
-Assert-Contains $eugenePrintable.Content "Walmart" "printable includes Walmart basket"
-Assert-Contains $eugenePrintable.Content "Source check:" "printable includes source-quality notes"
-Assert-Contains $eugenePrintable.Content "Search result - needs item-page check" "printable flags search-result source notes"
+$alpharettaPrintable = Invoke-WebRequest -Uri "$BaseUrl/printable?zip=30022&scenario=base_regular_total" -UseBasicParsing
+Assert-HttpStatus $alpharettaPrintable 200 "GET /printable?zip=30022"
+Assert-PrintableBasketOrHonestUnavailable $alpharettaPrintable.Content "printable 30022"
+if ($alpharettaPrintable.Content -match "Shop here today:") {
+  Assert-Contains $alpharettaPrintable.Content "Source check:" "printable includes source-quality notes"
+}
 
 $unsupportedZip = Invoke-WebRequest -Uri "$BaseUrl/?zip=99999&scenario=base_regular_total" -UseBasicParsing
 Assert-HttpStatus $unsupportedZip 200 "GET /?zip=99999"

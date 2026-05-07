@@ -15,7 +15,7 @@
     "secret:check": "node scripts/check-secrets.mjs",
     "lint": "node scripts/run-local-bin.mjs eslint eslint . --max-warnings=0",
     "typecheck": "node scripts/run-local-bin.mjs next next typegen && node scripts/run-local-bin.mjs typescript tsc --noEmit",
-    "test": "node --test --experimental-strip-types tests/normalization.test.ts tests/operator-observation-queue.test.ts tests/location-context-lane-a.test.ts tests/waitlist-lane-a.test.ts tests/waitlist-harness-lane-a.test.ts tests/publication-governance-lane-a.test.ts tests/governance-seed-30328-contract.test.ts tests/hosted-proof-observation.test.ts tests/release-health-freshness.test.ts tests/hosted-proof-request.test.ts tests/admin-evidence-download-route.test.ts tests/source-quality.test.ts tests/ops-boundary-scripts.test.ts tests/secret-scan.test.ts",
+    "test": "node --test --experimental-strip-types tests/normalization.test.ts tests/operator-observation-queue.test.ts tests/location-context-lane-a.test.ts tests/waitlist-lane-a.test.ts tests/waitlist-harness-lane-a.test.ts tests/publication-governance-lane-a.test.ts tests/governance-seed-30328-contract.test.ts tests/hosted-proof-observation.test.ts tests/release-health-freshness.test.ts tests/hosted-proof-request.test.ts tests/admin-evidence-download-route.test.ts tests/source-quality.test.ts tests/ops-boundary-scripts.test.ts tests/public-smoke-contract.test.ts tests/secret-scan.test.ts",
     "import:legacy": "node --experimental-strip-types scripts/import-legacy-json.ts",
     "smoke:public": "node scripts/run-powershell-script.mjs ./scripts/public-smoke.ps1",
     "smoke:public:3109": "node scripts/run-powershell-script.mjs ./scripts/public-smoke.ps1 -BaseUrl http://localhost:3109",

@@ -177,8 +177,8 @@ test("public smoke stays public-only and covers pilot routes", () => {
   assert.ok(packageJson.scripts["smoke:public"]);
   assert.match(script, /\$env:APP_URL/);
   assert.match(script, /\?zip=30328&scenario=base_regular_total/);
-  assert.match(script, /\?zip=97401&scenario=base_regular_total/);
-  assert.match(script, /\/printable\?zip=97401&scenario=base_regular_total/);
+  assert.match(script, /\?zip=30022&scenario=base_regular_total/);
+  assert.match(script, /\/printable\?zip=30022&scenario=base_regular_total/);
   assert.match(script, /\?zip=99999&scenario=base_regular_total/);
   assert.doesNotMatch(script, /\/api\/admin|ADMIN_ACCESS_TOKEN|Cookie:|published_price_observations|SUPABASE_SERVICE_ROLE_KEY/);
 });
