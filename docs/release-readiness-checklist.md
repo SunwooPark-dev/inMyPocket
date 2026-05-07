@@ -30,7 +30,7 @@ Last re-verified locally: 2026-04-16
 - [x] Homepage accepts a 5-digit ZIP as the primary location control
 - [x] Primary and secondary public CTAs are visible
 - [x] Homepage shows closest tracked-store context without changing cheapest-store ranking
-- [x] Weekly-updates bridge remains visible near the top of the homepage after the shopping decision context
+- [x] Weekly-updates bridge appears immediately after the shopping decision card and before secondary trust/location details
 - [x] Strongest answer block appears before detail
 - [x] Detail remains collapsed by default
 - [x] Printable route leads with a shopping decision

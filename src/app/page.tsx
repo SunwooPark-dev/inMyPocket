@@ -312,6 +312,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </section>
 
+      <SectionCard eyebrow="Weekly planning" title="Keep this basket answer each week" variant="support">
+        <div className="offer-card weekly-updates-bridge" id="weekly-updates">
+          <p className="hero__lede">
+            Get one simple weekly email showing where this basket is cheapest before you shop again.
+          </p>
+          <ul className="compact-list compact-list--wide">
+            <li>Non-payment updates only in the current environment.</li>
+            <li>Use it for yourself or if you shop for a parent or older family member.</li>
+            <li>We keep the same basket and trust notes used in today&apos;s answer.</li>
+          </ul>
+          <WaitlistForm defaultZip={zipCode} checkoutEnabled={paymentEnabled} />
+        </div>
+      </SectionCard>
+
       <section className="hero__stats" aria-label="Quick trust summary">
         <article className="stat-card">
           <span>Area</span>
@@ -335,19 +349,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         summaries={summaries}
       />
 
-      <SectionCard eyebrow="Weekly planning" title="Keep this basket answer each week" variant="support">
-        <div className="offer-card" id="weekly-updates">
-          <p className="hero__lede">
-            Get one simple weekly email showing where this basket is cheapest before you shop again.
-          </p>
-          <ul className="compact-list compact-list--wide">
-            <li>Non-payment updates only in the current environment.</li>
-            <li>Use it for yourself or if you shop for a parent or older family member.</li>
-            <li>We keep the same basket and trust notes used in today&apos;s answer.</li>
-          </ul>
-          <WaitlistForm defaultZip={zipCode} checkoutEnabled={paymentEnabled} />
-        </div>
-      </SectionCard>
 
       <SectionCard eyebrow="Trust" title="Why this answer is easy to trust">
         <ul className="compact-list compact-list--wide">

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   getWaitlistIntroCopy,
@@ -9,6 +10,20 @@ import {
 } from "../src/lib/waitlist-form-content.ts";
 import { WAITLIST_EVENT_NAME, buildWaitlistEventDetail } from "../src/lib/waitlist-events.ts";
 import { WEEKLY_UPDATES_PLAN_CODE, buildWaitlistSubmissionRequest } from "../src/lib/waitlist.ts";
+
+test("weekly updates bridge appears immediately after the answer block", () => {
+  const pageSource = readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
+  const answerIndex = pageSource.indexOf('id="today-answer"');
+  const bridgeIndex = pageSource.indexOf('id="weekly-updates"', answerIndex);
+  const statsIndex = pageSource.indexOf('aria-label="Quick trust summary"', answerIndex);
+  const locationIndex = pageSource.indexOf("<LocationAwareStoreExperience", answerIndex);
+
+  assert.ok(answerIndex > -1, "homepage answer block must exist");
+  assert.ok(bridgeIndex > answerIndex, "weekly updates bridge must follow the answer block");
+  assert.ok(statsIndex > bridgeIndex, "weekly updates bridge must appear before the secondary trust summary");
+  assert.ok(locationIndex > bridgeIndex, "weekly updates bridge must appear before location-aware store details");
+  assert.match(pageSource, /No payment info is needed|Non-payment updates only/);
+});
 
 test("caregiver copy promises trust-first weekly updates", () => {
   assert.match(getWaitlistIntroCopy(false, "caregiver"), /weekly email/i);

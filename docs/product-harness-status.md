@@ -31,7 +31,7 @@ Last refreshed: 2026-04-16
 - Homepage now distinguishes the cheapest basket from the closest tracked real store
 - Eugene `97401` is available as a Fred Meyer / Albertsons / Walmart pilot area with Walmart-led full basket coverage
 - Item detail rows now show source-quality labels for exact item pages versus broader official source checks
-- Weekly-updates bridge remains visible high on the homepage after the shopping decision and nearest-store context
+- Weekly-updates bridge is placed immediately after the shopping decision card, before secondary trust/location details, so the answer-to-signup path stays within one scroll
 - Weekly updates form now supports both self-serve and caregiver-oriented copy in the non-payment lane
 - Printable page communicates the shopping decision in the first three lines
 - Detail stays collapsed by default
