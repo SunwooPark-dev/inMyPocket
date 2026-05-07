@@ -16,11 +16,12 @@ Use this baseline when an operator is running the smoke lane through Codex-assis
 Populate [`.env.local`](../.env.local) with:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `APP_URL`
 - `ADMIN_ACCESS_TOKEN`
 - `ADMIN_SESSION_SECRET`
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is now optional for the active server-side basket path. Keep it only if you explicitly want to probe the legacy public REST surface during operator diagnostics.
 
 ### Optional legacy Stripe config
 
@@ -79,7 +80,7 @@ Current scope note: the automated local smoke lane proves route reachability and
 7. Confirm the homepage shows a 5-digit ZIP input as the primary location control
 8. Confirm the homepage shows ZIP-first location controls in raw route smoke, and verify nearest-store plus weekly-updates bridge surfaces through UI evidence or interactive browser rendering rather than raw HTML alone
 9. Confirm dashboard still renders with stored observations preferred over seeds
-10. Confirm public basket pages respond and stream the expected loading-shell copy when reading from `published_price_observations`
+10. Confirm public basket pages respond and stream the expected loading-shell copy while governed basket data stays behind the app server
 11. Separately confirm the explicit governed empty-state copy renders when no publishable summary exists
 
 ## Location behavior
@@ -88,6 +89,21 @@ Current scope note: the automated local smoke lane proves route reachability and
 - Browser geolocation is optional and only enriches nearest-store distance; it must not reorder the cheapest-store answer.
 - Unsupported 5-digit ZIPs should show a pilot-area message instead of silently falling back.
 - Browser memory should restore the last supported ZIP, but geolocation should only run after an explicit click in the current session.
+
+## Boundary behavior
+
+- Public basket routes should read governed published data through the app server, not a browser-side Supabase client.
+- Manual observation read/write traffic should stay under `/api/admin/observations`.
+- Smoke must continue distinguishing internal admin saves from public publication events.
+- Publishable-key REST checks should return denied access or zero rows; direct governed-row reads are outside the active contract.
+- If direct governed rows are returned, run `pnpm ops:harden-published-view`, then `pnpm ops:harden-published-view:apply` from a linked Supabase environment to revoke `anon`/`authenticated`/`public` grants while preserving `service_role` reads.
+- Direct REST smoke failures should report status plus sanitized classification only; do not print raw REST response bodies.
+
+## Source-quality behavior
+
+- `97401` can show a full basket only when at least one store reaches governed 80% coverage.
+- Item rows should distinguish exact item-page checks from broader official category/search checks.
+- Broader official checks can support a current MVP basket, but they should remain visible until replaced with item-detail URLs.
 
 ## 6. Optional monetization follow-up
 
@@ -119,7 +135,9 @@ Supabase project and confirm:
 
 - deny policies exist for base tables
 - `published_price_observations` exists
-- `anon`/`authenticated` can only read the published view
+- `anon`/`authenticated`/`public` do not have direct grants on `published_price_observations`
+- `forbidden_direct_grant_count = 0`
+- `service_role_select_grant_count = 1`
 - `observation-evidence` bucket is private
 
 ## Related proof docs
@@ -129,3 +147,5 @@ Supabase project and confirm:
 - [accepted-risks.md](./accepted-risks.md)
 - [roadmap-slices.md](./roadmap-slices.md)
 - [operator-evidence-bundle.md](./operator-evidence-bundle.md)
+- [security-boundary-rules.md](./security-boundary-rules.md)
+- [boundary-smoke-checklist.md](./boundary-smoke-checklist.md)

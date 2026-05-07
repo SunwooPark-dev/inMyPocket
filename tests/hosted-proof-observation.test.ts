@@ -94,6 +94,23 @@ test("external hosted-proof helpers incorporate observation details", () => {
   );
 });
 
+test("failed local proof is prioritized before hosted observation guidance", () => {
+  const failedReleaseHealth: ReleaseHealthSummary = {
+    ...LOCAL_SIMULATED_RELEASE_HEALTH,
+    verdict: "red",
+    proofLevel: "failed",
+    proofLabel: "failed (local-simulated)",
+    operationsProofStatus: "verification failure recorded",
+    liveSupabaseProofStatus: "unavailable in this environment"
+  };
+
+  const nextActions = getOperatorNextActions(failedReleaseHealth);
+  assert.equal(nextActions[0]?.key, "repair-local-proof");
+  assert.deepEqual(nextActions[0]?.commands, ["pnpm dev", "pnpm ops:evidence", "pnpm ops:verify"]);
+  assert.equal(nextActions[1]?.key, "harden-published-view");
+  assert.equal(nextActions[2]?.key, "observe-hosted");
+});
+
 test("observe-hosted-proof script records workflow mismatch when remote workflow differs", () => {
   const tmp = mkdtempSync(join(tmpdir(), "inmypoket-hosted-proof-"));
 

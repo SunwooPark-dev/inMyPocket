@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { HostedProofObservation } from "../src/lib/ops-evidence.ts";
+import { logger } from "./logger.ts";
 
 function stripBom(value: string) {
   return value.charCodeAt(0) === 0xfeff ? value.slice(1) : value;
@@ -276,7 +277,7 @@ async function main() {
   await writeFile(observationJsonPath, `${JSON.stringify(observation, null, 2)}\n`, "utf8");
   await writeFile(observationMarkdownPath, markdown, "utf8");
 
-  console.log(`Wrote hosted proof observation to ${observationJsonPath}`);
+  logger.info(`Wrote hosted proof observation to ${observationJsonPath}`);
 }
 
 await main();

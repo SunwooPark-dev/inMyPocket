@@ -20,7 +20,6 @@ export const monetizationModel = "donation-and-ads" as const;
 export function isSupabaseConfigured() {
   return Boolean(
     appEnv.supabaseUrl &&
-      appEnv.supabasePublishableKey &&
       appEnv.supabaseServiceRoleKey
   );
 }

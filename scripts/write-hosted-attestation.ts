@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { logger } from "./logger.ts";
+
 import {
   deriveVerificationScope,
   getProofLevelForOperationsStatus,
@@ -50,7 +52,7 @@ async function main() {
   await mkdir(evidenceDir, { recursive: true });
   await writeFile(attestationPath, `${JSON.stringify(attestation, null, 2)}\n`, "utf8");
 
-  console.log(`Wrote hosted attestation to ${attestationPath}`);
+  logger.info(`Wrote hosted attestation to ${attestationPath}`);
 }
 
 await main();

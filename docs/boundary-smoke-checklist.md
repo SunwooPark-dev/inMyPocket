@@ -27,11 +27,15 @@ Use this checklist whenever boundary-sensitive work touches public basket reads,
 1. Confirm a fresh manual admin save does not appear in `published_price_observations` before a governed publication step.
 2. Confirm public pages still use governed published rows when they exist.
 3. Confirm the explicit no-publishable-summary branch still renders honestly when none exist.
+4. Confirm publishable-key direct REST reads on `published_price_observations` are denied or return zero governed rows.
+5. If direct governed rows are returned, run `pnpm ops:harden-published-view:apply` from a linked Supabase environment and rerun smoke.
+6. Confirm `pnpm ops:harden-published-view:verify` reports `forbidden_direct_grant_count = 0` and `service_role_select_grant_count = 1`.
 
 ## Regression Commands
 
 ```powershell
 pnpm boundary:check
+pnpm secret:check
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -39,4 +43,4 @@ pnpm build
 pnpm smoke:local -SkipPayment
 ```
 
-For evidence smoke/debug runs, capture and inspect the `Location` header rather than treating the body as the success signal, and do not print or persist admin cookies, signed URLs, or evidence body contents in repo-local debug artifacts.
+For evidence smoke/debug runs, capture and inspect the `Location` header rather than treating the body as the success signal, and do not print or persist admin cookies, signed URLs, raw Supabase REST response bodies, or evidence body contents in repo-local debug artifacts.

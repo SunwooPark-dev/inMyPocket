@@ -29,6 +29,8 @@ Last refreshed: 2026-04-16
 - Store comparison is one-column on mobile
 - Compare and printable routes now preserve all supported non-payment price scenarios
 - Homepage now distinguishes the cheapest basket from the closest tracked real store
+- Eugene `97401` is available as a Fred Meyer / Albertsons / Walmart pilot area with Walmart-led full basket coverage
+- Item detail rows now show source-quality labels for exact item pages versus broader official source checks
 - Weekly-updates bridge remains visible high on the homepage after the shopping decision and nearest-store context
 - Weekly updates form now supports both self-serve and caregiver-oriented copy in the non-payment lane
 - Printable page communicates the shopping decision in the first three lines
@@ -66,15 +68,20 @@ Last refreshed: 2026-04-16
 - Saved observation appeared in recent observations
 - Evidence download route redirected
 - Unauthenticated evidence route was blocked
-- Public Supabase view continued to return governed published data
+- Public basket routes returned governed published data through the app server
 - Fresh manual admin saves stayed out of `published_price_observations` until publication
 - Hosted governed `30328` slice now exposes `16` published `kroger-30328` regular rows in `published_price_observations`
 - Env-loaded runtime render now proves governed populated `30328` and governed empty `30022` branches on both homepage and printable
+- Public basket pages now read governed published data through a server-owned module rather than a browser-side Supabase client
+- Manual observation save/read traffic now stays under `/api/admin/observations`
+- Publishable-key REST must return denied access or zero governed rows; direct governed-row reads are a boundary failure
 
 ### Live Supabase proof
 
 - `published_price_observations` exists
-- Public published view returned `200`
+- Direct publishable-key access to `published_price_observations` is not part of the active contract
+- `pnpm ops:harden-published-view:apply` is the operator patch when direct rows are returned
+- Hardened proof expects `forbidden_direct_grant_count = 0` and `service_role_select_grant_count = 1`
 - Private base table `price_observations` returned `401 permission denied`
 - Deny policies exist on:
   - `price_observations`
@@ -89,6 +96,8 @@ Last refreshed: 2026-04-16
 - Admin unlock throttling remains an MVP-level control and is not a durable distributed rate-limit system
 - Manual admin saves are internal evidence rows, not public publication events, so smoke/docs must keep distinguishing save proof from publish proof
 - Policy proof still comes from multiple reproducible sources and should keep being refreshed as artifacts age
+- The active public app no longer depends on a browser-side publishable-key read path; operator proof should treat direct governed-row reads as a boundary failure
+- The active local smoke lane no longer requires `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; that key is now optional diagnostic input rather than a core runtime dependency
 
 ## 3. Payment
 

@@ -4,7 +4,7 @@ export default function PrintableLoading() {
       <section className="print-header">
         <div className="print-summary" aria-busy="true">
           <p className="hero__eyebrow">Large-print shopping list</p>
-          <h1>Preparing your grocery plan</h1>
+          <h1>Preparing today&apos;s printable grocery plan</h1>
           <div className="skeleton-line skeleton-line--title" />
           <div className="skeleton-line" />
           <div className="skeleton-line" />
