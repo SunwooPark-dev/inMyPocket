@@ -1,0 +1,44 @@
+# inMyPoket — Cursor Rules
+
+## 프로젝트 구조
+- Next.js 16 App Router 사용
+- TypeScript strict 모드
+- pnpm 패키지 매니저
+
+## 코딩 스타일
+- 함수형 컴포넌트 사용
+- React Server Components 우선
+- 클라이언트 컴포넌트는 `"use client"` 명시
+
+## 파일 구조 규칙
+- 페이지: `src/app/**/page.tsx`
+- 레이아웃: `src/app/**/layout.tsx`
+- API 라우트: `src/app/api/**/route.ts`
+- 컴포넌트: `src/components/`
+- 비즈니스 로직: `src/lib/`
+
+## 네이밍 컨벤션
+- 파일명: kebab-case (`my-component.tsx`)
+- 컴포넌트명: PascalCase (`MyComponent`)
+- 함수명: camelCase (`getData`)
+- 상수: UPPER_SNAKE_CASE (`API_URL`)
+
+## 테스트
+- Node.js 내장 테스트 러너 사용
+- 테스트 파일: `tests/` 디렉토리
+- 실행: `pnpm test`
+
+## 빌드 검증
+```bash
+pnpm typecheck && pnpm lint && pnpm test && pnpm build
+```
+
+## 주의사항
+- Supabase CLI 없음 → hosted migration 수동 처리
+- WSL 환경 → Windows node_modules 재사용 불가
+- `next typegen`이 tsconfig.json을 자동 수정할 수 있음
+
+## Git 워크플로
+- main: 안정 브랜치
+- codex/*: 에이전트 작업 브랜치
+- worktree 활용으로 병렬 작업 가능
