@@ -39,6 +39,8 @@ Start this lane when any of the following is true:
 - `docs/product-harness-status.md`
 - `.github/workflows/ci.yml`
 
+`.ops-evidence/` is a local/generated evidence cache. Read it locally for freshness checks, but do not stage, commit, zip, or externally share per-run bundles or browser-profile artifacts. If the latest bundle predates sanitized report output or contains raw Supabase output, rerun `pnpm ops:evidence` and `pnpm ops:verify` after the relevant boundary blocker is closed.
+
 ## Operator Procedure
 
 1. Read the latest `.ops-evidence` pointers and identify the newest canonical evidence snapshot.

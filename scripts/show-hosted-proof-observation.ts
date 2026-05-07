@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { logger } from "./logger.ts";
+
 type HostedProofObservation = {
   recordedAt: string;
   repo: string;
@@ -125,7 +127,7 @@ async function main() {
     }
   }
 
-  console.log(lines.join("\n"));
+  logger.info(lines.join("\n"));
 }
 
 await main();

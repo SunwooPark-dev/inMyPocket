@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { logger } from './logger.mjs';
 import { createClient } from '@supabase/supabase-js';
 
 function loadEnv(path) {
@@ -88,4 +89,4 @@ const verify = await supabase
   .order('canonical_product_id');
 if (verify.error) throw verify.error;
 
-console.log(JSON.stringify({ ok: true, deletedCount: del.count, insertedCount: ins.count, verifiedCount: verify.data.length, sample: verify.data.slice(0,5) }, null, 2));
+logger.info(JSON.stringify({ ok: true, deletedCount: del.count, insertedCount: ins.count, verifiedCount: verify.data.length, sample: verify.data.slice(0,5) }, null, 2));

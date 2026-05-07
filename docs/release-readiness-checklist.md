@@ -10,6 +10,8 @@ Last re-verified locally: 2026-04-16
 - [x] `pnpm lint`
 - [x] `pnpm test`
 - [x] `pnpm build`
+- [x] `pnpm boundary:check`
+- [x] `pnpm secret:check`
 - [x] GitHub Actions CI quality gate exists for non-payment checks
 - [x] GitHub Actions CI hosted `ops:evidence` lane uploads non-payment automation-proof artifacts
 - [x] Evidence contract verifier exists and emits canonical release-health verdicts
@@ -43,9 +45,11 @@ Last re-verified locally: 2026-04-16
 - [x] Admin unlock flow and lockout behavior proved
 - [x] Authenticated observation save flow proved
 - [x] Evidence route access control proved
-- [x] Public Supabase view returned published data
+- [x] Public product routes render governed basket data through the app server
 - [x] Fresh admin saves stay internal until governed publication occurs
-- [x] Base table direct read from anon was denied
+- [x] Published-view direct grants are no longer part of the active public contract
+- [x] Published-view direct-grant drift has an explicit repair command: `pnpm ops:harden-published-view:apply`
+- [x] Published-view verification expects `forbidden_direct_grant_count = 0` and `service_role_select_grant_count = 1`
 - [x] Evidence bucket exists and is private
 - [x] Governed no-publishable-summary empty-state branch has been observed in env-loaded runtime against migrated governed data
 

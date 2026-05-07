@@ -1,3 +1,5 @@
+import { logger } from "./logger.ts";
+
 import { constants } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -401,7 +403,7 @@ async function main() {
     throw new Error(`Ops evidence verification failed:\n- ${errors.join("\n- ")}`);
   }
 
-  console.log(`Verified ops evidence contract: ${health.verdict.toUpperCase()} (${health.proofLevel})`);
+  logger.info(`Verified ops evidence contract: ${health.verdict.toUpperCase()} (${health.proofLevel})`);
 }
 
 await main();

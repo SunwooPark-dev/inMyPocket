@@ -176,21 +176,26 @@ export function buildItemRows(
   scenario: ComparisonScenario,
   observations: PriceObservation[] = DEMO_OBSERVATIONS
 ): ItemComparisonRow[] {
+  const storesForZip = STORES.filter((store) => store.zipCode === zipCode);
+  const retailerIds = storesForZip.map((store) => store.retailerId);
   const storeLookup = Object.fromEntries(
-    STORES.filter((store) => store.zipCode === zipCode).map((store) => [store.retailerId, store.id])
-  );
+    storesForZip.map((store) => [store.retailerId, store.id])
+  ) as Partial<Record<RetailerId, string>>;
 
   return ANCHOR_BASKET.map((item) => {
-    const pricesByRetailer = {
-      kroger: null,
-      aldi: null,
-      walmart: null
-    } as Record<RetailerId, SelectedPrice | null>;
+    const pricesByRetailer = Object.fromEntries(
+      retailerIds.map((retailerId) => [retailerId, null])
+    ) as Partial<Record<RetailerId, SelectedPrice | null>>;
 
-    (Object.keys(pricesByRetailer) as RetailerId[]).forEach((retailerId) => {
+    retailerIds.forEach((retailerId) => {
+      const storeId = storeLookup[retailerId];
+      if (!storeId) {
+        return;
+      }
+
       const itemObservations = observations.filter(
         (observation) =>
-          observation.storeId === storeLookup[retailerId] &&
+          observation.storeId === storeId &&
           observation.canonicalProductId === item.id
       );
       const selected = selectObservation(scenario, itemObservations);

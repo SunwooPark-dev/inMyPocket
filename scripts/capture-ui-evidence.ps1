@@ -76,6 +76,22 @@ function Assert-AssetCreated {
   throw "$Label was not created at $Path"
 }
 
+function Assert-BaseUrlReachable {
+  param(
+    [string]$Url,
+    [string]$Label
+  )
+
+  try {
+    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing
+    if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 400) {
+      throw "$Label expected a successful response from $Url but got HTTP $($response.StatusCode)"
+    }
+  } catch {
+    throw "$Label could not reach $Url. Start the app with 'pnpm dev', 'pnpm dev:3001', or 'pnpm start:3001' before running UI evidence capture."
+  }
+}
+
 function Invoke-BrowserCapture {
   param(
     [string[]]$Arguments,
@@ -119,9 +135,15 @@ if (-not (Test-Path $OutputDir)) {
 $playwrightAvailable = Test-PlaywrightAvailable
 
 if ($playwrightAvailable) {
-  @"
-$(& $pythonCommand (Join-Path $projectRoot "scripts\capture-ui-evidence.py") --base-url $BaseUrl --output-dir $OutputDir)
-"@.Trim() | Write-Output
+  Assert-BaseUrlReachable -Url "$BaseUrl/" -Label "UI evidence capture"
+  $pythonOutput = & $pythonCommand (Join-Path $projectRoot "scripts\capture-ui-evidence.py") --base-url $BaseUrl --output-dir $OutputDir 2>&1 | Out-String
+  $pythonOutput = $pythonOutput.Trim()
+  if (-not [string]::IsNullOrWhiteSpace($pythonOutput)) {
+    $pythonOutput | Write-Output
+  }
+  if ($LASTEXITCODE -ne 0) {
+    throw "UI evidence capture failed while Playwright was rendering $BaseUrl."
+  }
   exit 0
 }
 

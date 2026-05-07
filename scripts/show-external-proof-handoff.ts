@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { logger } from "./logger.ts";
+
 type ExternalProofHandoffArtifact = {
   generatedAt: string;
   releaseHealthVerdict: "green" | "red";
@@ -103,7 +105,7 @@ async function main() {
     lines.push(`  Commands: ${action.commands.join(" ; ")}`);
   }
 
-  console.log(lines.join("\n"));
+  logger.info(lines.join("\n"));
 }
 
 await main();

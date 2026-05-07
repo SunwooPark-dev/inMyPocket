@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { logger } from './logger.mjs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import HomePage from '../src/app/page.tsx';
 import PrintablePage from '../src/app/printable/page.tsx';
@@ -21,7 +22,7 @@ loadEnv(new URL('../.env.local', import.meta.url));
 const home30328 = renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({ zip: '30328', scenario: 'base_regular_total' }) }));
 const printable30328 = renderToStaticMarkup(await PrintablePage({ searchParams: Promise.resolve({ zip: '30328', scenario: 'base_regular_total' }) }));
 
-console.log(JSON.stringify({
+logger.info(JSON.stringify({
   home30328: {
     hasEmpty: home30328.includes("We couldn"),
     hasKroger: home30328.includes('Kroger'),

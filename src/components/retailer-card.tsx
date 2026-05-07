@@ -18,6 +18,22 @@ function membershipLine() {
   return "Member pricing shown separately";
 }
 
+function getSourceQualitySummary(summary: BasketSummary) {
+  const broadSourceCount = summary.selectedPrices.filter((price) =>
+    price.observation.sourceQuality === "category_page" ||
+    price.observation.sourceQuality === "search_page"
+  ).length;
+  const itemPageCount = summary.selectedPrices.filter((price) =>
+    price.observation.sourceQuality === "item_page"
+  ).length;
+
+  if (broadSourceCount === 0) {
+    return `${itemPageCount} item-page checks`;
+  }
+
+  return `${itemPageCount} item-page checks, ${broadSourceCount} broader official checks`;
+}
+
 export function RetailerCard({
   summary,
   cheapestTotal,
@@ -30,6 +46,7 @@ export function RetailerCard({
   const membership = membershipLine();
   const showMembershipLine = summary.retailer.membershipLabel !== "No membership";
   const isBest = rank === 0;
+  const sourceQualitySummary = getSourceQualitySummary(summary);
 
   return (
     <article
@@ -62,6 +79,7 @@ export function RetailerCard({
       {showMembershipLine ? (
         <p className="retailer-card__meta">{membership}</p>
       ) : null}
+      <p className="retailer-card__meta">{sourceQualitySummary}</p>
       {distanceMiles !== null ? (
         <p className="retailer-card__meta">
           About {distanceMiles.toFixed(1)} miles away

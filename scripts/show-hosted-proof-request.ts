@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { logger } from "./logger.ts";
+
 type HostedProofRequestArtifact = {
   generatedAt: string;
   proofLabel: string;
@@ -41,7 +43,7 @@ async function main() {
     artifact.closeCondition
   ];
 
-  console.log(lines.join("\n"));
+  logger.info(lines.join("\n"));
 }
 
 await main();

@@ -30,6 +30,21 @@ where table_schema = 'public'
 order by grantee, privilege_type;
 
 select
+  count(*) as forbidden_direct_grant_count
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and table_name = 'published_price_observations'
+  and grantee in ('anon', 'authenticated', 'public');
+
+select
+  count(*) as service_role_select_grant_count
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and table_name = 'published_price_observations'
+  and grantee = 'service_role'
+  and privilege_type = 'SELECT';
+
+select
   id,
   name,
   public

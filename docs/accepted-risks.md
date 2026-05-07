@@ -46,6 +46,14 @@ Use this file as the operator-facing source of truth for:
 
 ## Operations
 
+### Some `97401` prices use broader official source pages
+
+- **Status:** accepted MVP risk
+- **Reason:** a few Eugene rows currently rely on official Walmart category or search pages while item-detail URLs are still being collected
+- **Current treatment:** the UI labels source quality as item-page, broader official page, or search result so users do not overread every row as an exact item-detail proof
+- **Why acceptable:** the basket remains based on official public pages and exposes weaker source quality instead of hiding it
+- **Reopen when:** category/search rows are used without visible labels, or when item-detail replacements are available
+
 ### Admin unlock throttling is not distributed
 
 - **Status:** accepted MVP risk
@@ -58,7 +66,8 @@ Use this file as the operator-facing source of truth for:
 
 - **Status:** accepted documentation gap
 - **Reason:** policy and bucket proof were gathered through CLI query output, REST checks, and smoke results rather than one single operator artifact
-- **Current treatment:** `pnpm ops:evidence` now writes an immutable per-run evidence bundle and refreshes `.ops-evidence/LATEST.md`, while the underlying proof still comes from scripts, smoke output, and live checks
+- **Current treatment:** `pnpm ops:evidence` now writes an immutable per-run evidence bundle and refreshes `.ops-evidence/LATEST.md`, while the underlying proof still comes from scripts, sanitized smoke output, and live checks
+- **Boundary note:** the active app now reads governed basket data server-side only, and publishable-key checks are no longer part of the required operator baseline
 - **Current contract note:** a fresh admin observation save is internal evidence and recent-observation proof, not an automatic publication event for `published_price_observations`
 - **Why acceptable:** the underlying proof is still available and reproducible
 - **Reopen when:** the operator evidence bundle falls out of sync with the underlying proof steps

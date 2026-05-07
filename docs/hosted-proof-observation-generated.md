@@ -1,5 +1,8 @@
 # Hosted Proof Observation
 
+> Historical snapshot.
+> This document may reference removed routes or modules and is not the current source of truth.
+
 Recorded: 2026-04-17T05:04:09.753Z
 Repo: SunwooPark-dev/inMyPocket
 Branch: main
