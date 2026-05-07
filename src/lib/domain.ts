@@ -42,6 +42,8 @@ export type WaitlistLeadStatus =
   | "payment_failed"
   | "weekly_updates_subscribed";
 
+export type FoundingMemberSignupStatus = WaitlistLeadStatus;
+
 export interface PilotCluster {
   zipCode: string;
   label: string;
@@ -201,3 +203,5 @@ export interface WaitlistLead {
   createdAt: string;
   updatedAt: string;
 }
+
+export type FoundingMemberSignup = WaitlistLead;

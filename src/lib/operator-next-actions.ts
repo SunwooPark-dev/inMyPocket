@@ -91,20 +91,6 @@ export function getOperatorNextActions(
     });
   }
 
-  if (releaseHealth.paymentStatus === "deferred") {
-    actions.push({
-      key: "reopen-payment",
-      title: "Reopen payment proof",
-      reason: "Payment remains intentionally outside the current merge gate until Stripe test-mode secrets exist.",
-      commands: [
-        "Provide STRIPE_SECRET_KEY",
-        "Provide STRIPE_WEBHOOK_SECRET",
-        "Provide STRIPE_PRICE_ID_FOUNDING_MEMBER"
-      ],
-      priority: "later"
-    });
-  }
-
   if (actions.length === 0) {
     actions.push({
       key: "monitor-state",
