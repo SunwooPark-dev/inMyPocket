@@ -1,7 +1,7 @@
 export type AcceptedLimit = {
   key: string;
   title: string;
-  status: "accepted" | "deferred";
+  status: "accepted" | "deferred" | "hardened";
   detail: string;
   reopenWhen: string;
 };
@@ -11,7 +11,7 @@ export function getAcceptedLimits() {
     {
       key: "admin-unlock-supabase-backed",
       title: "Admin unlock throttling uses Supabase persistence",
-      status: "accepted",
+      status: "hardened",
       detail: "Lockout state is persisted to Supabase for cross-instance durability. In-memory store is used as fast-path cache and fallback when Supabase is unavailable.",
       reopenWhen: "The product needs sub-millisecond distributed rate limiting or Redis-grade coordination."
     },

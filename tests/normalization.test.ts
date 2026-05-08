@@ -197,7 +197,7 @@ test("accepted local limits expose the current operator boundaries", () => {
   const limits = getAcceptedLimits();
 
   assert.equal(limits.length, 3);
-  assert.equal(limits.some((limit) => limit.key === "admin-unlock-supabase-backed" && limit.status === "accepted"), true);
+  assert.equal(limits.some((limit) => limit.key === "admin-unlock-supabase-backed" && limit.status === "hardened"), true);
   assert.equal(limits.some((limit) => limit.key === "monetization-nonpayment" && limit.status === "accepted"), true);
 });
 
