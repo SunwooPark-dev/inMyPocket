@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const token = payload?.token?.trim() ?? "";
 
   if (isValidAdminAccessToken(token)) {
-    clearAdminUnlockAttempts(clientKey);
+    await clearAdminUnlockAttempts(clientKey);
     recordAdminUnlockIncident({
       eventType: "success",
       clientKey,
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return response;
   }
 
-  const rateLimit = getAdminUnlockRateLimitStatus(clientKey);
+  const rateLimit = await getAdminUnlockRateLimitStatus(clientKey);
 
   if (!rateLimit.allowed) {
     recordAdminUnlockIncident({
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   }
 
   if (!token) {
-    const failure = recordAdminUnlockFailure(clientKey);
+    const failure = await recordAdminUnlockFailure(clientKey);
     recordAdminUnlockIncident({
       eventType: failure.allowed ? "invalid_token" : "throttled",
       clientKey,
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const failure = recordAdminUnlockFailure(clientKey);
+  const failure = await recordAdminUnlockFailure(clientKey);
   recordAdminUnlockIncident({
     eventType: failure.allowed ? "invalid_token" : "throttled",
     clientKey,

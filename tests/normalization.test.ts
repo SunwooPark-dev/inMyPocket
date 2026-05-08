@@ -197,7 +197,7 @@ test("accepted local limits expose the current operator boundaries", () => {
   const limits = getAcceptedLimits();
 
   assert.equal(limits.length, 3);
-  assert.equal(limits.some((limit) => limit.key === "admin-unlock-local" && limit.status === "accepted"), true);
+  assert.equal(limits.some((limit) => limit.key === "admin-unlock-supabase-backed" && limit.status === "accepted"), true);
   assert.equal(limits.some((limit) => limit.key === "monetization-nonpayment" && limit.status === "accepted"), true);
 });
 
@@ -399,21 +399,21 @@ test("admin cookie secure mode follows the app URL scheme", async () => {
   assert.equal(adminAuth.shouldUseSecureAdminCookie("not-a-url"), false);
 });
 
-test("admin unlock rate limit locks after repeated failures and clears on success", () => {
+test("admin unlock rate limit locks after repeated failures and clears on success", async () => {
   const clientKey = "127.0.0.1::test-agent";
   resetAdminUnlockAttemptStore();
 
   for (let attempt = 1; attempt < adminUnlockRateLimitPolicy.maxAttempts; attempt += 1) {
-    const status = recordAdminUnlockFailure(clientKey, 1_000);
+    const status = await recordAdminUnlockFailure(clientKey, 1_000);
     assert.equal(status.allowed, true);
   }
 
-  const locked = recordAdminUnlockFailure(clientKey, 1_000);
+  const locked = await recordAdminUnlockFailure(clientKey, 1_000);
   assert.equal(locked.allowed, false);
   assert.equal(locked.retryAfterSeconds > 0, true);
 
-  clearAdminUnlockAttempts(clientKey);
-  const recovered = getAdminUnlockRateLimitStatus(clientKey, 1_000);
+  await clearAdminUnlockAttempts(clientKey);
+  const recovered = await getAdminUnlockRateLimitStatus(clientKey, 1_000);
   assert.equal(recovered.allowed, true);
   assert.equal(recovered.attempts, 0);
 });
@@ -1038,7 +1038,7 @@ test("createOperatorProofSummary packages operator-facing checklist and pointers
   assert.equal(summary.artifactPointers.externalProofHandoffJsonPath, ".ops-evidence/external-proof-handoff.json");
   assert.equal(summary.artifactPointers.visualReportDir, ".ops-evidence/visual-regression-20260416-015507");
   assert.equal(summary.items.some((item) => item.key === "admin-access" && item.status === "proved"), true);
-  assert.equal(summary.acceptedLimits.some((limit) => limit.key === "admin-unlock-local"), true);
+  assert.equal(summary.acceptedLimits.some((limit) => limit.key === "admin-unlock-supabase-backed"), true);
   assert.equal(summary.externalBlockers.some((blocker) => blocker.key === "hosted-proof"), true);
   assert.equal(summary.externalProofHandoff.some((item) => item.key === "hosted-proof"), true);
   assert.equal(summary.nextActions.some((action) => action.key === "observe-hosted"), true);

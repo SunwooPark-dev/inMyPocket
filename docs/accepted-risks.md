@@ -54,13 +54,13 @@ Use this file as the operator-facing source of truth for:
 - **Why acceptable:** the basket remains based on official public pages and exposes weaker source quality instead of hiding it
 - **Reopen when:** category/search rows are used without visible labels, or when item-detail replacements are available
 
-### Admin unlock throttling is not distributed
+### Admin unlock throttling uses Supabase-backed persistence
 
-- **Status:** accepted MVP risk
-- **Reason:** current lockout behavior is sufficient for the pilot but not durable across multiple runtimes
-- **Current treatment:** local/process-level throttling with lockout and retry-after behavior
-- **Why acceptable:** this is adequate for the current internal/admin operator surface
-- **Reopen when:** the product needs stronger abuse controls across multiple instances or public exposure increases
+- **Status:** hardened
+- **Reason:** lockout state is now persisted to Supabase for cross-instance durability
+- **Current treatment:** Supabase-backed rate limiting with in-memory fast-path cache and graceful fallback when Supabase is unavailable
+- **Why acceptable:** lockouts survive process restarts and are shared across multiple runtime instances
+- **Reopen when:** the product needs sub-millisecond distributed rate limiting or Redis-grade coordination
 
 ### Supabase proof is collected from multiple evidence sources
 

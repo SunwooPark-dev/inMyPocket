@@ -9,11 +9,11 @@ export type AcceptedLimit = {
 export function getAcceptedLimits() {
   return [
     {
-      key: "admin-unlock-local",
-      title: "Admin unlock throttling is local-only",
+      key: "admin-unlock-supabase-backed",
+      title: "Admin unlock throttling uses Supabase persistence",
       status: "accepted",
-      detail: "Current lockout behavior is process-local and resets when the local runtime restarts.",
-      reopenWhen: "The product needs stronger abuse controls across multiple instances or broader exposure."
+      detail: "Lockout state is persisted to Supabase for cross-instance durability. In-memory store is used as fast-path cache and fallback when Supabase is unavailable.",
+      reopenWhen: "The product needs sub-millisecond distributed rate limiting or Redis-grade coordination."
     },
     {
       key: "supabase-proof-multisource",
