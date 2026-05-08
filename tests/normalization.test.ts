@@ -399,6 +399,13 @@ test("admin cookie secure mode follows the app URL scheme", async () => {
   assert.equal(adminAuth.shouldUseSecureAdminCookie("not-a-url"), false);
 });
 
+test("admin cookie name uses __Host- prefix when secure", async () => {
+  const adminAuth = await import("../src/lib/admin-auth.ts");
+
+  assert.equal(adminAuth.resolveAdminCookieName(false), "inmypoket_admin_session");
+  assert.equal(adminAuth.resolveAdminCookieName(true), "__Host-inmypoket_admin_session");
+});
+
 test("admin unlock rate limit locks after repeated failures and clears on success", async () => {
   const clientKey = "127.0.0.1::test-agent";
   resetAdminUnlockAttemptStore();

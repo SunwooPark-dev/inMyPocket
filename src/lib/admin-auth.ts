@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { appEnv } from "./env.ts";
 
-const COOKIE_NAME = "inmypoket_admin_session";
+const COOKIE_BASE_NAME = "inmypoket_admin_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 function getAdminAccessToken() {
@@ -60,6 +60,15 @@ export function shouldUseSecureAdminCookie(appUrl = process.env.APP_URL ?? appEn
   }
 }
 
+/**
+ * Resolve the cookie name with security prefix.
+ * - HTTPS (__Host-): strongest prefix — enforces Secure, Path=/, no Domain
+ * - HTTP (local dev): base name without prefix
+ */
+export function resolveAdminCookieName(secure = shouldUseSecureAdminCookie()) {
+  return secure ? `__Host-${COOKIE_BASE_NAME}` : COOKIE_BASE_NAME;
+}
+
 export function verifyAdminSessionValue(value: string | undefined) {
   if (!value || !isAdminAuthConfigured()) {
     return false;
@@ -91,10 +100,30 @@ export async function isAdminAuthorized() {
 
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  return verifyAdminSessionValue(cookieStore.get(COOKIE_NAME)?.value);
+
+  // Check prefixed name first, fall back to base name for migration
+  const secure = shouldUseSecureAdminCookie();
+  const primaryName = resolveAdminCookieName(secure);
+  const primaryValue = cookieStore.get(primaryName)?.value;
+
+  if (primaryValue) {
+    return verifyAdminSessionValue(primaryValue);
+  }
+
+  // Migration fallback: accept old cookie name during transition
+  if (secure) {
+    const legacyValue = cookieStore.get(COOKIE_BASE_NAME)?.value;
+    if (legacyValue) {
+      return verifyAdminSessionValue(legacyValue);
+    }
+  }
+
+  return false;
 }
 
 export const adminCookie = {
-  name: COOKIE_NAME,
+  get name() {
+    return resolveAdminCookieName();
+  },
   maxAge: SESSION_MAX_AGE_SECONDS
 };
