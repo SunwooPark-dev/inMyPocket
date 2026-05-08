@@ -1,10 +1,10 @@
 # Release Readiness Checklist
 
-Last refreshed: 2026-04-16
+Last refreshed: 2026-05-07
 
 ## Quality gates
 
-Last re-verified locally: 2026-04-16
+Last re-verified locally: 2026-05-07
 
 - [x] `pnpm typecheck`
 - [x] `pnpm lint`
