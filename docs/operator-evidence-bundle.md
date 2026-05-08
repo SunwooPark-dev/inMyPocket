@@ -50,7 +50,7 @@ The canonical `release-health` verdict now also records the latest advisory visu
 In hosted CI, `visual:check` and `ops:attest-hosted` now run before `ops:verify`, so the canonical hosted release-health verdict consumes the same run's visual advisory and hosted provenance instead of an older snapshot.
 The canonical `release-health` verdict is now freshness-aware: it records whether newer ops/hosted/visual artifacts exist than the current verification snapshot, includes an explicit verification scope, and surfaces stale reasons in `/admin`.
 
-Last refreshed: 2026-04-16
+Last refreshed: 2026-05-07
 
 ## Environment Snapshot
 
